@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
-import { resolveBodyPosition, calculateMoonSpinAxis, getDaysSinceJ2000 } from '../../astronomy/kepler';
+import { calculateMoonSpinAxis, getDaysSinceJ2000 } from '../../astronomy/kepler';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
 import { scaleRadius } from '../../astronomy/scaling';
 import { useSimulation } from '../../state/simulationContext';
@@ -24,7 +24,8 @@ interface MoonBodyProps {
 
 export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) => {
   const {
-    simulationDate,
+    getSimulationDate,
+    getBodyPosition,
     scaleMode,
     selectedBodyId,
     selectBody,
@@ -73,7 +74,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
   useFrame(() => {
     if (!moon.moonOrbitalElements || !moonGroupRef.current) return;
 
-    const scaledOffset = resolveBodyPosition(moon.id,simulationDate,scaleMode)?.displayOffset;
+    const scaledOffset = getBodyPosition(moon.id,scaleMode)?.displayOffset;
     if (!scaledOffset) return;
 
     moonGroupRef.current.position.set(scaledOffset.x, scaledOffset.y, scaledOffset.z);
@@ -82,7 +83,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
     if (moonMeshRef.current && moon.physical.rotationPeriodHours) {
       const rotSpeed = 24 / Math.abs(moon.physical.rotationPeriodHours);
       moonMeshRef.current.quaternion.copy(spinPole);
-      moonMeshRef.current.rotateY(getDaysSinceJ2000(simulationDate) * rotSpeed * Math.PI * 2);
+      moonMeshRef.current.rotateY(getDaysSinceJ2000(getSimulationDate()) * rotSpeed * Math.PI * 2);
     }
   });
 
@@ -141,7 +142,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
         <Html
           position={[0, radius + 0.4, 0]}
           center
-          distanceFactor={18}
+          zIndexRange={[1, 0]}
           style={{ pointerEvents: 'none' }}
         >
           <div className="flex flex-col items-center">

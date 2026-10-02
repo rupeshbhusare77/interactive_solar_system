@@ -5,10 +5,14 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { ScaleMode, CameraMode, ViewToggles } from '../astronomy/types';
 import { clampSimulationDate, validateSimulationDate, SIMULATION_MIN_DATE, SIMULATION_MAX_DATE } from '../astronomy/modelContract';
+import { createFrameCalculations } from './frameCalculations';
 
 export interface SimulationContextType {
   // Time and animation
   simulationDate: Date;
+  getSimulationDate: () => Date;
+  getBodyPosition: ReturnType<typeof createFrameCalculations>['getBodyPosition'];
+  getBodyEphemeris: ReturnType<typeof createFrameCalculations>['getBodyEphemeris'];
   setSimulationDate: (date: Date) => void;
   dateError: string | null;
   isPlaying: boolean;
@@ -31,6 +35,8 @@ export interface SimulationContextType {
   setHoveredBodyId: (id: string | null) => void;
 
   // Measurement tool
+  isMeasurementOpen: boolean;
+  setIsMeasurementOpen: (open: boolean) => void;
   measurementOriginId: string | null;
   setMeasurementOriginId: (id: string | null) => void;
   measurementTargetId: string | null;
@@ -60,14 +66,22 @@ const SimulationContext = createContext<SimulationContextType | null>(null);
 
 export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [simulationDate, updateSimulationDate] = useState<Date>(() => clampSimulationDate(new Date()));
+  const dateRef = useRef(simulationDate);
+  const getSimulationDate = useCallback(() => dateRef.current, []);
+  const calculations = useRef<ReturnType<typeof createFrameCalculations>>();
+  if (!calculations.current) calculations.current = createFrameCalculations(getSimulationDate);
   const [dateError, setDateError] = useState<string | null>(null);
   const setSimulationDate = useCallback((date: Date) => {
     const error = validateSimulationDate(date);
     setDateError(error);
-    if (!error) updateSimulationDate(new Date(date.getTime()));
+    if (!error) {
+      dateRef.current = new Date(date.getTime());
+      updateSimulationDate(dateRef.current);
+      setIsPlaying(false);
+    }
   }, []);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  // Default speed: 1 day per real second (86400 sim seconds / real second)
+  // Default speed: three simulation days per real second.
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(86400 * 3);
   const [scaleMode, setScaleMode] = useState<ScaleMode>('educational');
   const [cameraMode, setCameraMode] = useState<CameraMode>('free');
@@ -77,34 +91,50 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [isInfoOpen, setIsInfoOpen] = useState<boolean>(true);
 
   const [measurementOriginId, setMeasurementOriginId] = useState<string | null>('sun');
+  const [isMeasurementOpen, updateIsMeasurementOpen] = useState(false);
+  const setIsMeasurementOpen = useCallback((open: boolean) => {
+    updateIsMeasurementOpen(open);
+    if (open) setIsInfoOpen(false);
+  }, []);
   const [measurementTargetId, setMeasurementTargetId] = useState<string | null>('earth');
 
   const [viewToggles, setViewToggles] = useState<ViewToggles>(defaultToggles);
 
-  // High precision simulation animation loop
-  const lastTimeRef = useRef<number>(performance.now());
-
+  // Renderers read the imperative clock; React telemetry is published at most 10 Hz.
   useEffect(() => {
-    let animId: number;
-
+    if (!isPlaying) return;
+    let animId = 0;
+    let lastTime = performance.now();
+    let lastPublication = lastTime;
     const tick = (now: number) => {
-      const deltaSec = (now - lastTimeRef.current) / 1000;
-      lastTimeRef.current = now;
-
-      if (isPlaying && deltaSec > 0 && deltaSec < 1.0) {
-        updateSimulationDate((prevDate) => {
-          const simDeltaMs = deltaSec * speedMultiplier * 1000;
-          return clampSimulationDate(new Date(prevDate.getTime() + simDeltaMs));
-        });
+      const deltaMs = now - lastTime;
+      lastTime = now;
+      // Hidden time and foreground stalls of one second or longer are dropped, never replayed.
+      if (!document.hidden && deltaMs > 0 && deltaMs < 1000 && speedMultiplier !== 0) {
+        const next = dateRef.current.getTime() + deltaMs * speedMultiplier;
+        dateRef.current = clampSimulationDate(new Date(next));
+        const atBoundary = (speedMultiplier > 0 && next >= SIMULATION_MAX_DATE.getTime()) ||
+          (speedMultiplier < 0 && next <= SIMULATION_MIN_DATE.getTime());
+        if (atBoundary) {
+          updateSimulationDate(dateRef.current);
+          setIsPlaying(false);
+          setDateError('Playback paused at the 1800–2100 UTC navigation limit. Reverse direction or choose another date.');
+          return;
+        }
+        if (now - lastPublication >= 100) {
+          updateSimulationDate(dateRef.current);
+          lastPublication = now;
+        }
       }
-
       animId = requestAnimationFrame(tick);
     };
-
-    lastTimeRef.current = performance.now();
+    const resetElapsed = () => { lastTime = performance.now(); };
+    document.addEventListener('visibilitychange', resetElapsed);
     animId = requestAnimationFrame(tick);
-
-    return () => cancelAnimationFrame(animId);
+    return () => {
+      cancelAnimationFrame(animId);
+      document.removeEventListener('visibilitychange', resetElapsed);
+    };
   }, [isPlaying, speedMultiplier]);
 
   useEffect(() => {
@@ -117,6 +147,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, [simulationDate, isPlaying, speedMultiplier]);
 
   const togglePlay = useCallback(() => {
+    updateSimulationDate(dateRef.current);
     setIsPlaying((prev) => !prev);
   }, []);
 
@@ -126,17 +157,20 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
     setDateError(null);
-    updateSimulationDate((prev) => clampSimulationDate(new Date(prev.getTime() + days * 86400 * 1000)));
+    dateRef.current = clampSimulationDate(new Date(dateRef.current.getTime() + days * 86400 * 1000));
+    updateSimulationDate(dateRef.current);
+    setIsPlaying(false);
   }, []);
 
   const resetToNow = useCallback(() => {
     setSimulationDate(new Date());
-  }, []);
+  }, [setSimulationDate]);
 
   const selectBody = useCallback((id: string | null) => {
     setSelectedBodyId(id);
     if (id) {
       setIsInfoOpen(true);
+      updateIsMeasurementOpen(false);
     }
   }, []);
 
@@ -148,6 +182,9 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     <SimulationContext.Provider
       value={{
         simulationDate,
+        getSimulationDate,
+        getBodyPosition: calculations.current.getBodyPosition,
+        getBodyEphemeris: calculations.current.getBodyEphemeris,
         setSimulationDate,
         dateError,
         isPlaying,
@@ -165,6 +202,8 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         hoveredBodyId,
         setHoveredBodyId,
         measurementOriginId,
+        isMeasurementOpen,
+        setIsMeasurementOpen,
         setMeasurementOriginId,
         measurementTargetId,
         setMeasurementTargetId,

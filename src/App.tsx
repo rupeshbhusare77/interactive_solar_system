@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { SimulationProvider } from './state/simulationContext';
+import { SimulationProvider, useSimulation } from './state/simulationContext';
 import { SolarSystemScene } from './components/canvas/SolarSystemScene';
 import { Header } from './components/ui/Header';
 import { TimelineControls } from './components/ui/TimelineControls';
@@ -15,7 +15,7 @@ import { HelpModal } from './components/ui/HelpModal';
 
 const AppContent: React.FC = () => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [isMeasurementOpen, setIsMeasurementOpen] = useState(false);
+  const { isMeasurementOpen, setIsMeasurementOpen } = useSimulation();
 
   return (
     <div
@@ -25,12 +25,12 @@ const AppContent: React.FC = () => {
         left: 0,
         right: 0,
         bottom: 0,
-        width: '100vw',
-        height: '100vh',
+        width: '100%',
+        height: '100dvh',
         overflow: 'hidden',
         backgroundColor: '#020408',
       }}
-      className="relative text-white font-sans select-none"
+      className="simulation-app relative text-white font-sans"
     >
       {/* 3D WebGL Solar System Canvas */}
       <SolarSystemScene />
@@ -38,7 +38,7 @@ const AppContent: React.FC = () => {
       {/* Top Navigation HUD */}
       <Header
         onOpenHelp={() => setIsHelpOpen(true)}
-        onToggleMeasurement={() => setIsMeasurementOpen((prev) => !prev)}
+        onToggleMeasurement={() => setIsMeasurementOpen(!isMeasurementOpen)}
         isMeasurementOpen={isMeasurementOpen}
       />
 

@@ -22,7 +22,7 @@ interface KuiperObject {
 }
 
 export const KuiperBelt: React.FC = () => {
-  const { simulationDate, scaleMode, viewToggles } = useSimulation();
+  const { getSimulationDate, scaleMode, viewToggles } = useSimulation();
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
 
   const count = 1800;
@@ -74,7 +74,7 @@ export const KuiperBelt: React.FC = () => {
     if (!instancedMeshRef.current || !viewToggles.showKuiperBelt) return;
 
     const mesh = instancedMeshRef.current;
-    const d = getDaysSinceJ2000(simulationDate);
+    const d = getDaysSinceJ2000(getSimulationDate());
 
     for (let idx = 0; idx < count; idx++) {
       const obj = objects[idx];

@@ -8,6 +8,10 @@ import { ScaleMode, Vector3D } from './types';
 import { KM_PER_AU } from './constants';
 
 export const REAL_SCALE_AU_UNITS = 250; // 1 AU = 250 Three.js units in Real scale
+export const EDUCATIONAL_DISTANCE_FACTOR = 25;
+export const EDUCATIONAL_DISTANCE_EXPONENT = 0.65;
+export const HYBRID_DISTANCE_FACTOR = 25;
+export const HYBRID_DISTANCE_MULTIPLIER = 3;
 
 /**
  * Pedagogically tuned visual radii for Educational mode
@@ -72,14 +76,14 @@ export function scalePosition(posAU: Vector3D, mode: ScaleMode): Vector3D {
 
     case 'hybrid':
       // Semi-logarithmic compression: 25 * ln(1 + 3 * r)
-      scaledR = 25 * Math.log(1 + 3.0 * r);
+      scaledR = HYBRID_DISTANCE_FACTOR * Math.log(1 + HYBRID_DISTANCE_MULTIPLIER * r);
       break;
 
     case 'educational':
     default:
       // Minimum calibration: Mercury perihelion center > Sun radius + Mercury radius + 0.25.
       // 25 * r^0.65 preserves direction and monotonic spacing; physical/real scale is unchanged.
-      scaledR = 25 * Math.pow(r, 0.65);
+      scaledR = EDUCATIONAL_DISTANCE_FACTOR * Math.pow(r, EDUCATIONAL_DISTANCE_EXPONENT);
       break;
   }
 

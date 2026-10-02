@@ -7,7 +7,7 @@ import React from 'react';
 import { Ruler, ArrowRightLeft, X, Zap } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODIES, CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
-import { resolveBodyPosition, distanceBetween } from '../../astronomy/kepler';
+import { distanceBetween } from '../../astronomy/kepler';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 interface MeasurementToolProps {
@@ -22,6 +22,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
     measurementTargetId,
     setMeasurementTargetId,
     simulationDate,
+    getBodyPosition,
   } = useSimulation();
 
   if (!isOpen) return null;
@@ -35,8 +36,8 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
   let distMiles = 0;
   let lightTimeStr = '';
 
-  const originPosition = originBody ? resolveBodyPosition(originBody.id,simulationDate) : null;
-  const targetPosition = targetBody ? resolveBodyPosition(targetBody.id,simulationDate) : null;
+  const originPosition = originBody ? getBodyPosition(originBody.id,'real',simulationDate) : null;
+  const targetPosition = targetBody ? getBodyPosition(targetBody.id,'real',simulationDate) : null;
   if (originPosition && targetPosition) {
     const posA = originPosition.physicalAU;
     const posB = targetPosition.physicalAU;
@@ -65,7 +66,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
   };
 
   return (
-    <div className="absolute top-16 left-4 z-20 w-80 glass-panel rounded-xl p-3 border border-sky-500/40 shadow-glow-cyan flex flex-col gap-2.5 pointer-events-auto backdrop-blur-xl">
+    <section aria-label="Distance measurement" className="measurement-panel glass-panel rounded-xl p-3 border border-sky-500/40 shadow-glow-cyan flex flex-col gap-2.5 pointer-events-auto backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
         <div className="flex items-center gap-1.5 text-sky-400 font-semibold text-xs tracking-wide">
           <Ruler className="w-4 h-4" />
@@ -73,6 +74,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
         </div>
         <button
           onClick={onClose}
+          aria-label="Close measurement"
           className="p-1 rounded text-zinc-400 hover:text-white transition-colors"
         >
           <X className="w-3.5 h-3.5" />
@@ -83,10 +85,11 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
       <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-1.5 text-xs">
         {/* Origin Dropdown */}
         <div>
-          <label className="text-[10px] text-zinc-500 uppercase font-mono block mb-1">
+          <label htmlFor="measurement-origin" className="text-[10px] text-zinc-500 uppercase font-mono block mb-1">
             Origin
           </label>
           <select
+            id="measurement-origin"
             value={measurementOriginId || ''}
             onChange={(e) => setMeasurementOriginId(e.target.value || null)}
             className="w-full bg-black/60 border border-zinc-700 rounded px-2 py-1 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
@@ -110,10 +113,11 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
 
         {/* Target Dropdown */}
         <div>
-          <label className="text-[10px] text-zinc-500 uppercase font-mono block mb-1">
+          <label htmlFor="measurement-target" className="text-[10px] text-zinc-500 uppercase font-mono block mb-1">
             Target
           </label>
           <select
+            id="measurement-target"
             value={measurementTargetId || ''}
             onChange={(e) => setMeasurementTargetId(e.target.value || null)}
             className="w-full bg-black/60 border border-zinc-700 rounded px-2 py-1 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
@@ -163,6 +167,6 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
           Position unavailable. Select two supported celestial bodies to measure distance.
         </div>
       )}
-    </div>
+    </section>
   );
 };

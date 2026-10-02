@@ -9,8 +9,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
-import { calculateEphemeris } from '../../astronomy/kepler';
-import { scalePosition, scaleRadius, scaleRingSystem } from '../../astronomy/scaling';
+import { scaleRadius, scaleRingSystem } from '../../astronomy/scaling';
 import { MOONS } from '../../astronomy/celestialData';
 import { useSimulation } from '../../state/simulationContext';
 import {
@@ -29,7 +28,8 @@ interface PlanetBodyProps {
 
 export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const {
-    simulationDate,
+    getBodyEphemeris,
+    getBodyPosition,
     scaleMode,
     selectedBodyId,
     selectBody,
@@ -105,13 +105,9 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   useFrame(() => {
     if (!body.orbitalElements || !planetGroupRef.current) return;
 
-    const ephemeris = calculateEphemeris(
-      body.orbitalElements,
-      simulationDate,
-      body.physical.rotationPeriodHours
-    );
-
-    const scaledPos = scalePosition(ephemeris.positionAU, scaleMode);
+    const ephemeris = getBodyEphemeris(body.id);
+    const scaledPos = getBodyPosition(body.id, scaleMode)?.displayPosition;
+    if (!ephemeris || !scaledPos) return;
     planetGroupRef.current.position.set(scaledPos.x, scaledPos.y, scaledPos.z);
 
     // Spin planet around its axial tilt
@@ -265,7 +261,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         <Html
           position={[0, radius + 1.2, 0]}
           center
-          distanceFactor={32}
+          zIndexRange={[1, 0]}
           style={{ pointerEvents: 'none' }}
         >
           <div className="flex flex-col items-center">

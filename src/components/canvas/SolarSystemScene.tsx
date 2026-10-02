@@ -19,7 +19,7 @@ import { PLANETS, DWARF_PLANETS, COMETS } from '../../astronomy/celestialData';
 import { useSimulation } from '../../state/simulationContext';
 
 export const SolarSystemScene: React.FC = () => {
-  const { selectBody, viewToggles } = useSimulation();
+  const { selectBody, viewToggles, isMeasurementOpen } = useSimulation();
 
   return (
     <div
@@ -75,7 +75,7 @@ export const SolarSystemScene: React.FC = () => {
           <KuiperBelt />
 
           {/* Real-time Astronomical Distance Measurement Vector */}
-          <MeasurementLine />
+          {isMeasurementOpen && <MeasurementLine />}
 
           {/* Optional Heliocentric Ecliptic Polar Grid */}
           {viewToggles.showDistanceGrid && (

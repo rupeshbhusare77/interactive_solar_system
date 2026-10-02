@@ -25,7 +25,7 @@ export const PlanetQuickDock: React.FC = () => {
   const { selectedBodyId, selectBody, setCameraMode } = useSimulation();
 
   return (
-    <aside className="absolute left-4 top-1/2 -translate-y-1/2 z-20 glass-panel rounded-2xl p-1.5 border border-white/10 shadow-2xl flex flex-col gap-1 pointer-events-auto backdrop-blur-xl">
+    <aside aria-label="Quick body navigation" className="quick-dock glass-panel rounded-2xl p-1.5 border border-white/10 shadow-2xl pointer-events-auto backdrop-blur-xl">
       <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider text-center py-1 border-b border-zinc-800 hidden sm:block">
         Fleet
       </div>
@@ -46,6 +46,8 @@ export const PlanetQuickDock: React.FC = () => {
                 : 'hover:bg-white/10 border border-transparent'
             }`}
             title={`Focus ${body.name}`}
+            aria-label={`Focus ${body.name}`}
+            aria-pressed={isSelected}
           >
             {/* Color dot icon */}
             <div
@@ -55,11 +57,7 @@ export const PlanetQuickDock: React.FC = () => {
               style={{ backgroundColor: body.physical.color }}
             />
 
-            {/* Hover Tooltip */}
-            <div className="absolute left-full ml-2.5 px-2 py-1 bg-black/90 text-white text-[11px] font-medium rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity border border-zinc-700 shadow-xl z-50 flex items-center gap-1.5">
-              <span>{body.name}</span>
-              <span className="text-[9px] font-mono text-zinc-400 uppercase">({body.type})</span>
-            </div>
+            <span className="ml-2 text-[11px]">{body.name}</span>
           </button>
         );
       })}

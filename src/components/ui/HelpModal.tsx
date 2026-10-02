@@ -2,8 +2,9 @@
  * 3D Solar System Simulator — Astronomical Guide & Controls Modal
  */
 
-import React from 'react';
-import { X, BookOpen, MousePointer, Orbit, Clock, Eye, Sparkles } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { REAL_SCALE_AU_UNITS, EDUCATIONAL_DISTANCE_FACTOR, EDUCATIONAL_DISTANCE_EXPONENT, HYBRID_DISTANCE_FACTOR, HYBRID_DISTANCE_MULTIPLIER } from '../../astronomy/scaling';
+import { X, BookOpen, MousePointer, Orbit, Clock, Eye } from 'lucide-react';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -11,19 +12,37 @@ interface HelpModalProps {
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isOpen && !dialog.open) {
+      const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      dialog.showModal();
+      closeButtonRef.current?.focus();
+      return () => {
+        dialog.close();
+        previousFocus?.focus();
+      };
+    }
+    if (!isOpen && dialog.open) dialog.close();
+  }, [isOpen]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <dialog ref={dialogRef} className="help-dialog" aria-labelledby="help-title" onCancel={(event) => { event.preventDefault(); onCloseRef.current(); }}>
       <div className="w-full max-w-2xl glass-panel rounded-2xl border border-white/20 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-black/40">
+        <div className="shrink-0 px-6 py-4 border-b border-zinc-800 flex items-center justify-between bg-black/40">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-sky-500/20 text-sky-400">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white tracking-wide">
+              <h2 id="help-title" className="text-base font-bold text-white tracking-wide">
                 Astronomical Simulator Field Manual
               </h2>
               <p className="text-xs text-zinc-400">
@@ -32,7 +51,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
           <button
-            onClick={onClose}
+            ref={closeButtonRef} type="button" aria-label="Close guide" onClick={onClose}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -40,7 +59,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-6 text-xs text-zinc-300">
+        <div className="min-h-0 p-6 overflow-y-auto space-y-6 text-xs text-zinc-300">
           {/* Section 1: Navigation Controls */}
           <div>
             <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
@@ -100,19 +119,19 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <div className="bg-black/40 border border-zinc-800 p-2.5 rounded-lg">
                 <div className="font-semibold text-emerald-300 mb-0.5">Educational Scale (Default)</div>
                 <p className="text-zinc-400 text-[11px]">
-                  Orbits are smoothly compressed and planetary spheres are scaled for optimal viewing on desktop monitors, allowing you to appreciate planetary textures while observing orbital patterns.
+                  Distances use {EDUCATIONAL_DISTANCE_FACTOR} × r^{EDUCATIONAL_DISTANCE_EXPONENT}, with r in AU. Body sizes are calibrated for visibility rather than a uniform physical scale. Numerical measurements use physical coordinates.
                 </p>
               </div>
               <div className="bg-black/40 border border-zinc-800 p-2.5 rounded-lg">
                 <div className="font-semibold text-sky-300 mb-0.5">Real Scale (1:1 Physical Scale)</div>
                 <p className="text-zinc-400 text-[11px]">
-                  1 Astronomical Unit equals 250 world units for distances and spherical radii. Use Focus to inspect individual bodies. Decorative effects remain illustrative.
+                  1 Astronomical Unit equals {REAL_SCALE_AU_UNITS} world units for distances and spherical radii. Use Focus to inspect individual bodies. Decorative effects remain illustrative.
                 </p>
               </div>
               <div className="bg-black/40 border border-zinc-800 p-2.5 rounded-lg">
                 <div className="font-semibold text-indigo-300 mb-0.5">Hybrid / Logarithmic Scale</div>
                 <p className="text-zinc-400 text-[11px]">
-                  Distances use <code className="text-zinc-200 font-mono">25 × ln(1 + 3r)</code>, with r in AU. Body sizes are calibrated for visibility; numerical measurements use physical coordinates.
+                  Distances use <code className="text-zinc-200 font-mono">{HYBRID_DISTANCE_FACTOR} × ln(1 + {HYBRID_DISTANCE_MULTIPLIER}r)</code>, with r in AU. Body sizes are calibrated for visibility; numerical measurements use physical coordinates.
                 </p>
               </div>
             </div>
@@ -127,6 +146,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               Control simulation time with play, pause, reverse, single-day steps, or speeds up to 10 years per second. Historic Events select a date and body; they do not recreate spacecraft missions or guarantee observed alignments. Future comet returns are approximate.
             </p>
             <p className="leading-relaxed text-zinc-400 mt-2">
+              Applying a UTC date or choosing a historic event pauses playback for inspection. Use Resume to continue. Reset returns the clock to the current UTC date and pauses playback; camera, scale, layers, and selection stay as you set them.
               Dates are entered and displayed in UTC, within the 1800–2100 navigation range.
               Calculation time approximates dynamical time with the UTC timestamp; leap seconds and
               TT/TDB offsets are omitted. The range is a visualization limit, not an accuracy guarantee.
@@ -139,15 +159,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-zinc-800 bg-black/40 flex justify-end">
+        <div className="shrink-0 px-6 py-3 border-t border-zinc-800 bg-black/40 flex justify-end">
           <button
-            onClick={onClose}
+            type="button" onClick={onClose}
             className="px-4 py-1.5 bg-sky-500 hover:bg-sky-400 text-black font-semibold text-xs rounded-lg transition-colors"
           >
             Got it, Let's Explore
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };

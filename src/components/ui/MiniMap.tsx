@@ -6,11 +6,11 @@
 import React, { useState } from 'react';
 import { useSimulation } from '../../state/simulationContext';
 import { PLANETS } from '../../astronomy/celestialData';
-import { calculateEphemeris } from '../../astronomy/kepler';
+
 import { Compass, ZoomIn, ZoomOut } from 'lucide-react';
 
 export const MiniMap: React.FC = () => {
-  const { simulationDate, selectedBodyId, selectBody, setCameraMode } = useSimulation();
+  const { simulationDate, selectedBodyId, selectBody, setCameraMode, getBodyEphemeris } = useSimulation();
   const [zoomMode, setZoomMode] = useState<'inner' | 'outer'>('inner');
 
   // Radar dimensions
@@ -26,7 +26,7 @@ export const MiniMap: React.FC = () => {
     : PLANETS;
 
   return (
-    <div className="absolute bottom-4 left-4 z-20 glass-panel rounded-xl p-2 border border-white/10 shadow-2xl flex flex-col gap-1.5 pointer-events-auto backdrop-blur-xl hidden md:flex">
+    <div className="radar-panel glass-panel rounded-xl p-2 border border-white/10 shadow-2xl flex-col gap-1.5 pointer-events-auto backdrop-blur-xl">
       {/* Radar Header */}
       <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono border-b border-zinc-800 pb-1">
         <span className="flex items-center gap-1 text-sky-400">
@@ -55,7 +55,8 @@ export const MiniMap: React.FC = () => {
           {visiblePlanets.map((planet) => {
             if (!planet.orbitalElements) return null;
 
-            const ephemeris = calculateEphemeris(planet.orbitalElements, simulationDate);
+            const ephemeris = getBodyEphemeris(planet.id, simulationDate);
+            if (!ephemeris) return null;
             const orbitR = planet.orbitalElements.a * radiusScale;
 
             // 2D position on radar
@@ -87,6 +88,15 @@ export const MiniMap: React.FC = () => {
                   onClick={() => {
                     selectBody(planet.id);
                     setCameraMode('focus');
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Focus ${planet.name} on radar`}
+                  aria-pressed={isSelected}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault(); selectBody(planet.id); setCameraMode('focus');
+                    }
                   }}
                 />
               </g>

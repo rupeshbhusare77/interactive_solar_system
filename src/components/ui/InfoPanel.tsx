@@ -4,7 +4,7 @@
  * and comprehensive physical and orbital NASA specifications.
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Compass,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP, MOONS } from '../../astronomy/celestialData';
-import { calculateEphemeris, distanceBetween, resolveBodyPosition, dateToJulianDate } from '../../astronomy/kepler';
+import { distanceBetween, dateToJulianDate } from '../../astronomy/kepler';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 export const InfoPanel: React.FC = () => {
@@ -33,7 +33,13 @@ export const InfoPanel: React.FC = () => {
     setCameraMode,
     setMeasurementOriginId,
     setMeasurementTargetId,
+    setIsMeasurementOpen,
+    getBodyPosition,
+    getBodyEphemeris,
   } = useSimulation();
+
+  const [isExpanded, setIsExpanded] = useState(false);
+  useEffect(() => setIsExpanded(false), [selectedBodyId]);
 
   if (!isInfoOpen || !selectedBodyId) return null;
 
@@ -50,15 +56,15 @@ export const InfoPanel: React.FC = () => {
 
   // Live dynamic ephemeris calculation
   const ephemeris = body.orbitalElements
-    ? calculateEphemeris(body.orbitalElements, simulationDate, body.physical.rotationPeriodHours)
+    ? getBodyEphemeris(body.id, simulationDate)
     : null;
 
   // Real-time distance to Earth
   let distToEarthAU = 0;
   let lightTimeToEarth = '';
   if (body.id !== 'earth') {
-    const earthPosition = resolveBodyPosition('earth',simulationDate);
-    const targetPosition = resolveBodyPosition(body.id,simulationDate);
+    const earthPosition = getBodyPosition('earth', 'real', simulationDate);
+    const targetPosition = getBodyPosition(body.id, 'real', simulationDate);
     distToEarthAU = earthPosition && targetPosition ? distanceBetween(targetPosition.physicalAU,earthPosition.physicalAU) : NaN;
 
     const lightSeconds = distToEarthAU * LIGHT_SECONDS_PER_AU;
@@ -83,7 +89,7 @@ export const InfoPanel: React.FC = () => {
   const aphelionAU = body.orbitalElements ? body.orbitalElements.a * (1 + body.orbitalElements.e) : null;
 
   return (
-    <aside className="absolute top-16 right-4 bottom-28 z-20 w-84 sm:w-96 glass-panel rounded-xl border border-white/10 shadow-2xl flex flex-col overflow-hidden pointer-events-auto backdrop-blur-xl">
+    <aside aria-label={`${body.name} information`} data-expanded={isExpanded} className="info-panel hud-inspector glass-panel rounded-xl border border-white/10 shadow-2xl flex flex-col overflow-hidden pointer-events-auto backdrop-blur-xl">
       {/* Header Bar */}
       <div
         className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between"
@@ -104,17 +110,19 @@ export const InfoPanel: React.FC = () => {
           </div>
         </div>
 
+        <button aria-expanded={isExpanded} aria-controls="body-details" onClick={() => setIsExpanded(!isExpanded)} className="panel-expand glass-button rounded px-2 py-1 text-xs">{isExpanded ? 'Collapse' : 'Details'}</button>
         <button
           onClick={() => setIsInfoOpen(false)}
           className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
           title="Close telemetry panel"
+          aria-label="Close telemetry panel"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Scrollable Content Body */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans">
+      <div id="body-details" className="panel-body min-h-0 flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans">
         {/* Quick Camera Action Buttons */}
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -238,7 +246,7 @@ export const InfoPanel: React.FC = () => {
             <div className="px-2.5 py-1.5 flex justify-between">
               <span className="text-zinc-400">Mean Temperature</span>
               <span className="text-white font-medium">
-                {body.physical.meanTempC}°C ({body.physical.meanTempC + 273.15} K)
+                {body.physical.meanTempC}°C ({(body.physical.meanTempC + 273.15).toFixed(2)} K)
               </span>
             </div>
           </div>
@@ -368,13 +376,13 @@ export const InfoPanel: React.FC = () => {
         {/* Measurement Quick Setup */}
         <div className="pt-2 border-t border-zinc-800 flex gap-2">
           <button
-            onClick={() => setMeasurementOriginId(body.id)}
+            onClick={() => { setMeasurementOriginId(body.id); setIsMeasurementOpen(true); }}
             className="flex-1 px-2 py-1 text-[11px] glass-button rounded text-zinc-300 hover:text-white"
           >
             Measure from Here
           </button>
           <button
-            onClick={() => setMeasurementTargetId(body.id)}
+            onClick={() => { setMeasurementTargetId(body.id); setIsMeasurementOpen(true); }}
             className="flex-1 px-2 py-1 text-[11px] glass-button rounded text-zinc-300 hover:text-white"
           >
             Measure to Here

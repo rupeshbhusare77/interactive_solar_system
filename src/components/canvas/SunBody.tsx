@@ -181,7 +181,7 @@ export const SunBody: React.FC = () => {
         <Html
           position={[0, radius + 1.8, 0]}
           center
-          distanceFactor={35}
+          zIndexRange={[1, 0]}
           style={{ pointerEvents: 'none' }}
         >
           <div className="flex flex-col items-center">

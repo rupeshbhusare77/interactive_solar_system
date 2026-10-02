@@ -3,25 +3,19 @@
  * Draws an interactive 3D laser vector between two celestial bodies with dynamic distance & light-time HUD.
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
-import { resolveBodyPosition, distanceBetween } from '../../astronomy/kepler';
+import { distanceBetween } from '../../astronomy/kepler';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 export const MeasurementLine: React.FC = () => {
-  const { simulationDate, scaleMode, measurementOriginId, measurementTargetId } = useSimulation();
+  const { simulationDate, getBodyPosition, scaleMode, measurementOriginId, measurementTargetId } = useSimulation();
 
   const midpointRef = useRef<THREE.Group>(null);
-  const [hudData, setHudData] = React.useState({
-    distAU: 0,
-    distMillionKm: 0,
-    lightTimeStr: '',
-  });
-
   const originBody = measurementOriginId ? CELESTIAL_BODY_MAP.get(measurementOriginId) : null;
   const targetBody = measurementTargetId ? CELESTIAL_BODY_MAP.get(measurementTargetId) : null;
 
@@ -42,16 +36,17 @@ export const MeasurementLine: React.FC = () => {
     return new THREE.Line(lineGeometry, mat);
   }, [lineGeometry]);
 
-  useFrame(() => {
-    if (!originBody || !targetBody || originBody.id === targetBody.id) return;
+  useEffect(() => () => {
+    lineGeometry.dispose();
+    (lineObject.material as THREE.Material).dispose();
+  }, [lineGeometry, lineObject]);
 
-    const positionA = resolveBodyPosition(originBody.id,simulationDate,scaleMode);
-    const positionB = resolveBodyPosition(targetBody.id,simulationDate,scaleMode);
-    if (!positionA || !positionB) { lineObject.visible = false; return; }
-    lineObject.visible = true;
+  const hudData = useMemo(() => {
+    const positionA = originBody ? getBodyPosition(originBody.id, scaleMode, simulationDate) : null;
+    const positionB = targetBody ? getBodyPosition(targetBody.id, scaleMode, simulationDate) : null;
+    if (!positionA || !positionB) return null;
     const posA_AU = positionA.physicalAU;
     const posB_AU = positionB.physicalAU;
-
     // Real astronomical distance in AU
     const distAU = distanceBetween(posA_AU, posB_AU);
     const distKm = distAU * KM_PER_AU;
@@ -71,7 +66,22 @@ export const MeasurementLine: React.FC = () => {
       lightTimeStr = `${hours} light-hours`;
     }
 
-    setHudData({ distAU, distMillionKm, lightTimeStr });
+    return { distAU, distMillionKm, lightTimeStr };
+
+  }, [originBody, targetBody, simulationDate, scaleMode, getBodyPosition]);
+
+  useFrame(() => {
+    if (!originBody || !targetBody || originBody.id === targetBody.id) return;
+
+    const positionA = getBodyPosition(originBody.id,scaleMode);
+    const positionB = getBodyPosition(targetBody.id,scaleMode);
+    if (!positionA || !positionB) {
+      lineObject.visible = false;
+      if (midpointRef.current) midpointRef.current.visible = false;
+      return;
+    }
+    if (midpointRef.current) midpointRef.current.visible = true;
+    lineObject.visible = true;
 
     // Scaled Three.js world coordinates
     const scaledA = positionA.displayPosition;
@@ -91,7 +101,7 @@ export const MeasurementLine: React.FC = () => {
     }
   });
 
-  if (!originBody || !targetBody || originBody.id === targetBody.id) return null;
+  if (!originBody || !targetBody || originBody.id === targetBody.id || !hudData) return null;
 
   return (
     <group>
@@ -100,7 +110,7 @@ export const MeasurementLine: React.FC = () => {
 
       {/* Dynamic Midpoint HUD Badge */}
       <group ref={midpointRef}>
-        <Html center distanceFactor={28} style={{ pointerEvents: 'none' }}>
+        <Html center zIndexRange={[1, 0]} style={{ pointerEvents: 'none' }}>
           <div className="bg-space-900/90 border border-sky-500/60 rounded px-2.5 py-1 text-xs shadow-glow-cyan backdrop-blur-md whitespace-nowrap text-center">
             <div className="text-[10px] uppercase tracking-wider text-sky-400 font-mono">
               {originBody.name} ↔ {targetBody.name}

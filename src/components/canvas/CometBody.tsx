@@ -8,8 +8,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
-import { calculateEphemeris } from '../../astronomy/kepler';
-import { scalePosition, scaleRadius } from '../../astronomy/scaling';
+import { scaleRadius } from '../../astronomy/scaling';
 import { useSimulation } from '../../state/simulationContext';
 
 interface CometBodyProps {
@@ -18,7 +17,8 @@ interface CometBodyProps {
 
 export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
   const {
-    simulationDate,
+    getBodyEphemeris,
+    getBodyPosition,
     scaleMode,
     selectedBodyId,
     selectBody,
@@ -39,8 +39,9 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
     if (!comet.orbitalElements || !groupRef.current) return;
 
     // Ephemeris at current simulation time
-    const ephemeris = calculateEphemeris(comet.orbitalElements, simulationDate);
-    const scaledPos = scalePosition(ephemeris.positionAU, scaleMode);
+    const ephemeris = getBodyEphemeris(comet.id);
+    const scaledPos = getBodyPosition(comet.id, scaleMode)?.displayPosition;
+    if (!ephemeris || !scaledPos) return;
     groupRef.current.position.set(scaledPos.x, scaledPos.y, scaledPos.z);
 
     // Orientation of the tail: points away from the Sun (origin [0,0,0])
@@ -140,7 +141,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
         <Html
           position={[0, radius + 0.6, 0]}
           center
-          distanceFactor={24}
+          zIndexRange={[1, 0]}
           style={{ pointerEvents: 'none' }}
         >
           <div className="flex flex-col items-center">

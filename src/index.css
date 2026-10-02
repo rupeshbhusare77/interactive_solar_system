@@ -82,3 +82,60 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.6);
 }
+
+/* Scene labels sit below every control surface. Panels and dialogs remain selectable. */
+:root { --header-height: 80px; --timeline-height: 80px; }
+html, body, #root { width: 100%; height: 100%; user-select: auto; -webkit-user-select: auto; }
+button, summary, select { touch-action: manipulation; }
+button, input, select, summary, a { min-width: 0; }
+button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #38bdf8; outline-offset: 3px;
+}
+.app-header { position: absolute; inset: 0 0 auto; z-index: 40; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .6rem .8rem; }
+.header-brand { flex: 0 1 auto; min-width: 0; }
+.header-controls { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
+.header-search { flex: 1 1 12rem; min-width: 0; max-width: 22rem; }
+.header-select { display: flex; align-items: center; gap: .25rem; font-size: .75rem; min-width: 0; }
+.header-select select { max-width: 10rem; }
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.info-panel { position: absolute; right: .75rem; top: calc(var(--header-height) + .5rem); bottom: calc(var(--timeline-height) + 1.25rem); width: min(24rem, calc(100% - 1.5rem)); z-index: 20; }
+.panel-expand { display: none; }
+.measurement-panel { position: absolute; top: calc(var(--header-height) + .5rem); left: .75rem; z-index: 20; width: min(20rem, calc(100% - 1.5rem)); max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem); overflow-y: auto; }
+.timeline-panel { position: absolute; bottom: .5rem; left: 50%; transform: translateX(-50%); width: min(56rem, calc(100% - 1rem)); z-index: 30; }
+.timeline-details > summary { width: max-content; }
+.timeline-disclosure { position: relative; }
+.timeline-popover { position: absolute; bottom: calc(100% + .5rem); right: 0; z-index: 2; width: min(20rem, calc(100vw - 2rem)); max-height: min(55dvh, 24rem); overflow: auto; }
+.quick-dock { position: absolute; left: .75rem; top: calc(var(--header-height) + .75rem); bottom: calc(var(--timeline-height) + 1rem); z-index: 10; display: flex; flex-direction: column; gap: .25rem; overflow: auto; }
+.quick-dock button { flex-shrink: 0; }
+
+
+.radar-panel { display: flex; position: absolute; left: 7.75rem; bottom: calc(var(--timeline-height) + 1.25rem); z-index: 10; }
+.help-dialog { border: 0; padding: 0; background: transparent; color: white; width: min(42rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; }
+.help-dialog::backdrop { background: rgba(0,0,0,.8); backdrop-filter: blur(8px); }
+@media (max-width: 767px) {
+  .header-brand { flex: 1 0 auto; }
+  .header-controls { flex-basis: 100%; }
+  .header-search { flex-basis: 100%; max-width: none; }
+  .header-select { flex: 1 1 8rem; }
+  .header-select select { flex: 1; max-width: 100%; }
+  .header-actions { flex: 1 1 auto; }
+  .info-panel { top: auto; left: .5rem; right: .5rem; bottom: calc(var(--timeline-height) + 1rem); width: auto; max-height: min(42dvh, calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem)); }
+  .info-panel[data-expanded="false"] .panel-body { display: none; }
+  .panel-expand { display: inline-flex; }
+  .measurement-panel { left: .5rem; width: calc(100% - 1rem); max-height: min(35dvh, calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem)); }
+  .quick-dock, .radar-panel { display: none; }
+  .timeline-main { justify-content: flex-start; }
+  .timeline-main time { flex-basis: 100%; }
+  .timeline-popover { position: fixed; left: .5rem; right: .5rem; bottom: calc(100% + .5rem); width: auto; }
+}
+@media (max-height: 500px) {
+  .quick-dock, .radar-panel { display: none; }
+
+  .info-panel { max-height: 35dvh; top: auto; }
+  .info-panel[data-expanded="false"] .panel-body { display: none; }
+  .panel-expand { display: inline-flex; }
+
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

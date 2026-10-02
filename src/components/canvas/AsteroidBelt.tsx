@@ -22,7 +22,7 @@ interface AsteroidData {
 }
 
 export const AsteroidBelt: React.FC = () => {
-  const { simulationDate, scaleMode, viewToggles } = useSimulation();
+  const { getSimulationDate, scaleMode, viewToggles } = useSimulation();
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
 
   const count = 2800;
@@ -85,7 +85,7 @@ export const AsteroidBelt: React.FC = () => {
     if (!instancedMeshRef.current || !viewToggles.showAsteroidBelt) return;
 
     const mesh = instancedMeshRef.current;
-    const d = getDaysSinceJ2000(simulationDate);
+    const d = getDaysSinceJ2000(getSimulationDate());
 
     for (let idx = 0; idx < count; idx++) {
       const ast = asteroids[idx];
