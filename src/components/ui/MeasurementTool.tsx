@@ -7,7 +7,7 @@ import React from 'react';
 import { Ruler, ArrowRightLeft, X, Zap } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODIES, CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
-import { calculateEphemeris, distanceBetween } from '../../astronomy/kepler';
+import { resolveBodyPosition, distanceBetween } from '../../astronomy/kepler';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 interface MeasurementToolProps {
@@ -35,18 +35,11 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
   let distMiles = 0;
   let lightTimeStr = '';
 
-  if (originBody && targetBody && originBody.id !== targetBody.id) {
-    const posA = originBody.id === 'sun'
-      ? { x: 0, y: 0, z: 0 }
-      : originBody.orbitalElements
-      ? calculateEphemeris(originBody.orbitalElements, simulationDate).positionAU
-      : { x: 0, y: 0, z: 0 };
-
-    const posB = targetBody.id === 'sun'
-      ? { x: 0, y: 0, z: 0 }
-      : targetBody.orbitalElements
-      ? calculateEphemeris(targetBody.orbitalElements, simulationDate).positionAU
-      : { x: 0, y: 0, z: 0 };
+  const originPosition = originBody ? resolveBodyPosition(originBody.id,simulationDate) : null;
+  const targetPosition = targetBody ? resolveBodyPosition(targetBody.id,simulationDate) : null;
+  if (originPosition && targetPosition) {
+    const posA = originPosition.physicalAU;
+    const posB = targetPosition.physicalAU;
 
     distAU = distanceBetween(posA, posB);
     distKm = distAU * KM_PER_AU;
@@ -135,7 +128,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
       </div>
 
       {/* Real-time Dynamic Results */}
-      {originBody && targetBody && originBody.id !== targetBody.id ? (
+      {originPosition && targetPosition ? (
         <div className="bg-black/60 border border-zinc-800 rounded-lg p-2.5 space-y-1.5 font-mono text-xs">
           <div className="flex justify-between items-baseline">
             <span className="text-zinc-400 text-[11px]">Distance:</span>
@@ -167,7 +160,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
         </div>
       ) : (
         <div className="text-[11px] text-zinc-400 text-center py-2 bg-black/30 rounded border border-zinc-800">
-          Select two different celestial bodies to measure real-time distance.
+          Position unavailable. Select two supported celestial bodies to measure distance.
         </div>
       )}
     </div>

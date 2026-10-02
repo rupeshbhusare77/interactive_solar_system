@@ -11,8 +11,8 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { OrbitControls } from '@react-three/drei';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
-import { calculateEphemeris, calculateMoonEphemeris } from '../../astronomy/kepler';
-import { scalePosition, scaleRadius, scaleMoonOffset } from '../../astronomy/scaling';
+import { resolveBodyPosition } from '../../astronomy/kepler';
+import { scaleRadius } from '../../astronomy/scaling';
 
 export const CameraManager: React.FC = () => {
   const { cameraMode, selectedBodyId, simulationDate, scaleMode } = useSimulation();
@@ -59,38 +59,9 @@ export const CameraManager: React.FC = () => {
     if (!controlsRef.current) return;
 
     if (cameraMode === 'focus' || cameraMode === 'follow') {
-      const bodyPos = new THREE.Vector3(0, 0, 0);
-
-      if (selectedBody && selectedBody.id !== 'sun') {
-        if (selectedBody.type === 'moon' && selectedBody.moonOrbitalElements && selectedBody.parentId) {
-          // Hierarchical moon positioning: planet position + moon offset
-          const parent = CELESTIAL_BODY_MAP.get(selectedBody.parentId);
-          if (parent && parent.orbitalElements) {
-            const parentEph = calculateEphemeris(parent.orbitalElements, simulationDate);
-            const parentScaled = scalePosition(parentEph.positionAU, scaleMode);
-            const parentRadius = scaleRadius(
-              parent.physical.radiusKm,
-              parent.type,
-              scaleMode,
-              parent.id
-            );
-            const { offsetAU } = calculateMoonEphemeris(
-              selectedBody.moonOrbitalElements,
-              simulationDate
-            );
-            const moonScaled = scaleMoonOffset(offsetAU, parentRadius, scaleMode);
-            bodyPos.set(
-              parentScaled.x + moonScaled.x,
-              parentScaled.y + moonScaled.y,
-              parentScaled.z + moonScaled.z
-            );
-          }
-        } else if (selectedBody.orbitalElements) {
-          const ephemeris = calculateEphemeris(selectedBody.orbitalElements, simulationDate);
-          const scaled = scalePosition(ephemeris.positionAU, scaleMode);
-          bodyPos.set(scaled.x, scaled.y, scaled.z);
-        }
-      }
+      const resolved = selectedBody ? resolveBodyPosition(selectedBody.id,simulationDate,scaleMode) : null;
+      if (!resolved) return;
+      const bodyPos = new THREE.Vector3(resolved.displayPosition.x,resolved.displayPosition.y,resolved.displayPosition.z);
 
       // Smooth tracking of lookAt target
       currentTarget.current.lerp(bodyPos, Math.min(1.0, delta * 7));

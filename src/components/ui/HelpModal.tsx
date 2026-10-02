@@ -72,21 +72,21 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <Orbit className="w-4 h-4 text-amber-400" /> Kepler's Laws vs. Simple Animations
             </h3>
             <p className="leading-relaxed mb-2 text-zinc-300">
-              Unlike arcade games or decorative 3D loops, this simulator solves **Kepler's Equation**{' '}
+              This educational model solves Kepler's equation{' '}
               <code className="text-amber-300 bg-black/60 px-1 py-0.5 rounded font-mono">
                 M = E - e·sin(E)
               </code>{' '}
-              via numerical Halley/Newton-Raphson iteration on every frame:
+              using numerical iteration with fixed orbital elements:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-zinc-400">
               <li>
-                <strong className="text-white">1st Law (Ellipses):</strong> Planets move in true ellipses with the Sun at one focus.
+                <strong className="text-white">1st Law (Ellipses):</strong> Physical coordinates follow ellipses with the Sun at one focus. Compressed display scales distort their shapes.
               </li>
               <li>
                 <strong className="text-white">2nd Law (Equal Areas):</strong> Bodies accelerate near perihelion and decelerate at aphelion (readily visible on comets like Halley!).
               </li>
               <li>
-                <strong className="text-white">3rd Law (Harmonics):</strong> The square of orbital period is proportional to the cube of semi-major axis (<code className="text-amber-300 font-mono">P² = a³</code>).
+                <strong className="text-white">3rd Law (Harmonics):</strong> For solar orbits, period in years and semi-major axis in AU approximately obey <code className="text-amber-300 font-mono">P² = a³</code>. This model uses catalog periods.
               </li>
             </ul>
           </div>
@@ -106,13 +106,13 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <div className="bg-black/40 border border-zinc-800 p-2.5 rounded-lg">
                 <div className="font-semibold text-sky-300 mb-0.5">Real Scale (1:1 Physical Scale)</div>
                 <p className="text-zinc-400 text-[11px]">
-                  1 Astronomical Unit equals 500 units. True proportions show the mind-boggling, awe-inspiring emptiness of the Solar System. Use the "Focus" button to zoom in close to any planet.
+                  1 Astronomical Unit equals 250 world units for distances and spherical radii. Use Focus to inspect individual bodies. Decorative effects remain illustrative.
                 </p>
               </div>
               <div className="bg-black/40 border border-zinc-800 p-2.5 rounded-lg">
                 <div className="font-semibold text-indigo-300 mb-0.5">Hybrid / Logarithmic Scale</div>
                 <p className="text-zinc-400 text-[11px]">
-                  Distances scale logarithmically with <code className="text-zinc-200 font-mono">log(1 + 9·r)</code>, preserving proportional outer Solar System spacing up to Pluto and comets.
+                  Distances use <code className="text-zinc-200 font-mono">25 × ln(1 + 3r)</code>, with r in AU. Body sizes are calibrated for visibility; numerical measurements use physical coordinates.
                 </p>
               </div>
             </div>
@@ -124,7 +124,16 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <Clock className="w-4 h-4 text-purple-400" /> Time Travel & Historical Alignments
             </h3>
             <p className="leading-relaxed text-zinc-300">
-              Control simulation time with play, pause, reverse, single-day steps, or speeds up to 10 years per second. Use the <strong>Historic Events</strong> button to witness historical milestones like Apollo 11, the Voyager 1 Pale Blue Dot portrait, the 2020 Great Conjunction, or fast forward to Halley's Comet perihelion in 2061!
+              Control simulation time with play, pause, reverse, single-day steps, or speeds up to 10 years per second. Historic Events select a date and body; they do not recreate spacecraft missions or guarantee observed alignments. Future comet returns are approximate.
+            </p>
+            <p className="leading-relaxed text-zinc-400 mt-2">
+              Dates are entered and displayed in UTC, within the 1800–2100 navigation range.
+              Calculation time approximates dynamical time with the UTC timestamp; leap seconds and
+              TT/TDB offsets are omitted. The range is a visualization limit, not an accuracy guarantee.
+              Fixed ellipses omit gravitational perturbations and precession. Satellite phases and
+              static pole orientations may be illustrative; body metadata identifies their status.
+              Surface rotation has an arbitrary prime meridian, so textures, seasons, lunar phases,
+              eclipses, and night lighting must not be used for observation planning.
             </p>
           </div>
         </div>

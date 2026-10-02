@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
             RxSolar <span className="text-[10px] px-1.5 py-0.2 bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded font-mono">Keplerian 3D</span>
           </h1>
           <p className="text-[10px] text-zinc-400 font-mono tracking-tight hidden sm:block">
-            High-Precision Astronomical Physics Engine
+            Educational Keplerian Orbit Model
           </p>
         </div>
       </div>

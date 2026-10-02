@@ -5,13 +5,13 @@ A browser-based 3D solar system simulator built with React, TypeScript, and Thre
 ## Features
 
 - Explore the Sun, eight planets, five dwarf planets, 15 moons, and three comets.
-- Calculate orbital positions using Kepler's equation and fixed orbital elements referenced to J2000.
+- Calculate orbital positions using Kepler's equation, explicit catalog epochs, and fixed orbital elements.
 - Play, pause, reverse, and step through simulation time, with speed presets from real time to ten simulated years per second.
 - Choose a date or jump to historical event dates.
 - Switch between educational, hybrid, and real display scales.
 - Navigate with free, focus, follow, top, and ecliptic camera modes.
 - Search for celestial bodies and inspect their physical properties and orbital telemetry.
-- Measure distances and light-travel times between the Sun and bodies with heliocentric orbital elements.
+- Measure physical distances and light-travel times between catalog bodies, including parent-relative moons.
 - Toggle orbit paths, labels, moons, lighting, the habitable zone, asteroid and Kuiper belts, and a distance grid.
 - View planetary textures, atmospheric glow, Earth clouds and night lights, planetary rings, and comet tails.
 - Use an orbital radar to locate and focus on major planets.
@@ -96,28 +96,38 @@ src/
 serve.js                 Optional local server for the production build
 ```
 
-## Physics verification
+## Verification
 
-The project includes independent assertions in `src/astronomy/verifyPhysics.ts`, invoked by `src/astronomy/runTest.ts`. They check Julian date conversion, Kepler solver accuracy, Earth's orbital-distance range, distance consistency, and retrograde rotation flags.
-
-After installing dependencies, run the existing suite without generating a test bundle on disk:
-
-```bash
-node --input-type=module -e "import {build} from 'esbuild'; import {createRequire} from 'node:module'; const result = await build({entryPoints:['src/astronomy/runTest.ts'],bundle:true,platform:'node',format:'cjs',write:false}); new Function('require',result.outputFiles[0].text)(createRequire(import.meta.url));"
-```
-
-This command uses esbuild supplied through Vite's dependency tree. There is currently no dedicated `npm test` script. Use `npm run build` to check TypeScript and bundling; browser verification is needed for visual and interaction changes.
+Run `npm run build` to check TypeScript and production bundling. Browser verification is needed for visual and interaction changes. Automated test files and their runner were removed at the project owner's request.
 
 ## Scientific scope and known limitations
 
-This project is an educational visualization using fixed orbital elements. It does not model gravitational interactions between bodies, orbital perturbations, or a live precision ephemeris. Historical presets select dates and bodies; they do not recreate spacecraft missions.
+This project is an educational visualization using fixed orbital elements. It does not model gravitational interactions between bodies, orbital perturbations, or a live precision ephemeris. Historical presets select dates and bodies; they do not recreate spacecraft missions or guarantee observed alignments. The information panel exposes each orbit's epoch, reference plane, provenance, and local model limits.
 
-- Moon rendering and camera tracking include parent-relative positions, but distance measurement and some information-panel calculations do not yet resolve those positions correctly. Moon distance readings should not be treated as accurate.
+Dates are entered and displayed in **UTC**. The navigation range is **January 1, 1800 through December 31, 2100**. This is a visualization policy, not a scientific accuracy guarantee. Invalid or out-of-range date submissions retain the previous time and show an error. Calendar changes require **Apply UTC Date**. Playback pauses at either boundary; stepping is clamped to the same limits.
+
+The calculation uses uniform 86,400-second days and treats the UTC timestamp as approximate dynamical time. J2000 is numerically represented by `2000-01-01T12:00:00Z`; the actual astronomical epoch is noon TT. Leap seconds, TT/TDB offsets, and relativistic time corrections are omitted. [JPL's time-scale documentation](https://ssd.jpl.nasa.gov/horizons/manual.html) describes the distinctions required for precision ephemerides.
+
+Orbital arguments are measured from the ascending node, periods are positive, and inclinations encode orbital direction. Physical coordinates use AU in a right-handed world frame `(ecliptic X, ecliptic Z, −ecliptic Y)`. Parent-equator satellite orbits use the parent's static illustrative pole transform; Earth's Moon retains its ecliptic reference. Legacy phases and pole azimuths with no recovered provenance are explicitly marked illustrative. Signed physical rotation periods identify retrograde bodies; rendered rotation uses a directed pole without reversing the direction twice.
+
+Comet propagation is local to the sourced perihelion model. Halley's 1986 and Hale-Bopp's 1997 passages were checked during Stage 1; future returns, including Halley in 2061, remain approximate. Static pole directions and arbitrary texture prime meridians do not reproduce precise surface orientation, seasons, lunar phases, eclipses, or the day/night terminator. Do not use this model for observation or mission planning; use [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) for precision states.
+
+The fixed Earth orbit was compared against an independent implementation of [JPL's Table 1 model](https://ssd.jpl.nasa.gov/planets/approx_pos.html), which includes element rates. The reference is the Earth–Moon barycenter, rather than Earth's center. These samples measure differences between two approximate models; they are not a guaranteed error bound against observations or Horizons.
+
+| UTC sample | Position difference |
+| --- | --- |
+| January 1, 1900, 12:00 | Approximately 130,873 km |
+| January 1, 2000, 12:00 | Approximately 2,310 km |
+| October 3, 2026, 00:00 | Approximately 21,081 km |
+| January 1, 2050, 12:00 | Approximately 61,968 km |
+
+These comparisons were recorded during Stage 1 verification. The test fixtures and reference generator were subsequently removed at the project owner's request.
+
+- Moon rendering, camera tracking, measurements, and information-panel distances use shared parent-relative positions. Their numerical consistency does not establish observed phase accuracy for illustrative satellite records.
 - Educational and hybrid scales deliberately change visual proportions and spacing. Numerical measurements use physical coordinates before display scaling.
 - The measurement line can remain visible when the measurement panel is closed.
 - Some texture-load failure paths replace cached textures without updating references already held by materials.
 - Stars, procedural textures, and belt particles use random generation, so their appearance can vary between sessions.
-- The in-app guide contains some scale descriptions that differ from the current implementation; the values documented above follow `src/astronomy/scaling.ts`.
 
 ## Repository contents
 

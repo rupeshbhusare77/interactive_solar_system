@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP, MOONS } from '../../astronomy/celestialData';
-import { calculateEphemeris, distanceBetween } from '../../astronomy/kepler';
+import { calculateEphemeris, distanceBetween, resolveBodyPosition, dateToJulianDate } from '../../astronomy/kepler';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 export const InfoPanel: React.FC = () => {
@@ -40,6 +40,14 @@ export const InfoPanel: React.FC = () => {
   const body = CELESTIAL_BODY_MAP.get(selectedBodyId);
   if (!body) return null;
 
+  const orbit = body.orbitalElements ?? body.moonOrbitalElements;
+  const julianDate = dateToJulianDate(simulationDate);
+  const outsideLocalModel = !!orbit?.modelRangeJD &&
+    (julianDate < orbit.modelRangeJD[0] || julianDate > orbit.modelRangeJD[1]);
+  const retrogradeSpin = body.moonOrbitalElements
+    ? body.moonOrbitalElements.i > 90
+    : body.physical.axialTiltDeg > 90;
+
   // Live dynamic ephemeris calculation
   const ephemeris = body.orbitalElements
     ? calculateEphemeris(body.orbitalElements, simulationDate, body.physical.rotationPeriodHours)
@@ -49,14 +57,14 @@ export const InfoPanel: React.FC = () => {
   let distToEarthAU = 0;
   let lightTimeToEarth = '';
   if (body.id !== 'earth') {
-    const earth = CELESTIAL_BODY_MAP.get('earth')!;
-    const earthEphemeris = calculateEphemeris(earth.orbitalElements!, simulationDate);
-
-    const posTarget = ephemeris ? ephemeris.positionAU : { x: 0, y: 0, z: 0 };
-    distToEarthAU = distanceBetween(posTarget, earthEphemeris.positionAU);
+    const earthPosition = resolveBodyPosition('earth',simulationDate);
+    const targetPosition = resolveBodyPosition(body.id,simulationDate);
+    distToEarthAU = earthPosition && targetPosition ? distanceBetween(targetPosition.physicalAU,earthPosition.physicalAU) : NaN;
 
     const lightSeconds = distToEarthAU * LIGHT_SECONDS_PER_AU;
-    if (lightSeconds < 60) {
+    if (!Number.isFinite(lightSeconds)) {
+      lightTimeToEarth = 'Unavailable';
+    } else if (lightSeconds < 60) {
       lightTimeToEarth = `${lightSeconds.toFixed(1)}s`;
     } else if (lightSeconds < 3600) {
       const mins = Math.floor(lightSeconds / 60);
@@ -151,7 +159,7 @@ export const InfoPanel: React.FC = () => {
               <div>
                 <span className="text-[10px] text-zinc-500 block">Dist to Earth</span>
                 <span className="text-white font-semibold text-xs">
-                  {distToEarthAU.toFixed(3)} AU
+                  {Number.isFinite(distToEarthAU) ? `${distToEarthAU.toFixed(3)} AU` : 'Unavailable'}
                 </span>
                 <span className="text-[10px] text-amber-300 block">
                   ⚡ {lightTimeToEarth}
@@ -218,7 +226,7 @@ export const InfoPanel: React.FC = () => {
               <span className="text-zinc-400">Rotation Period</span>
               <span className="text-white font-medium">
                 {Math.abs(body.physical.rotationPeriodHours)} hrs
-                {body.physical.rotationPeriodHours < 0 ? ' (Retrograde)' : ''}
+                {retrogradeSpin ? ' (Retrograde)' : ''}
               </span>
             </div>
             <div className="px-2.5 py-1.5 flex justify-between">
@@ -240,7 +248,7 @@ export const InfoPanel: React.FC = () => {
         {body.orbitalElements && (
           <div className="space-y-1.5">
             <h3 className="text-[11px] font-semibold uppercase text-zinc-400 tracking-wider">
-              Keplerian Orbital Elements (J2000)
+              Fixed Keplerian Orbital Elements
             </h3>
             <div className="bg-black/30 border border-zinc-800/80 rounded-lg divide-y divide-zinc-800/60 font-mono text-[11px]">
               <div className="px-2.5 py-1.5 flex justify-between">
@@ -287,6 +295,24 @@ export const InfoPanel: React.FC = () => {
             </div>
           </div>
         )}
+
+        <section className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5 text-[11px] text-zinc-300">
+          <h3 className="font-semibold text-amber-300">Model and accuracy</h3>
+          <p>Educational approximation. UTC timestamps approximate dynamical time; perturbations and precise surface orientation are omitted.</p>
+          {orbit ? (
+            <>
+              <p>Epoch: JD {orbit.epochJD ?? 'unavailable'} · Plane: {orbit.referencePlane === 'parent-equator' ? 'parent equator (static illustrative pole)' : 'J2000 ecliptic'}</p>
+              <p>Provenance: {orbit.provenance?.status ?? 'unverified'}. {orbit.provenance?.note}</p>
+              {orbit.modelRangeJD && (
+                <p>Local model interval: JD {orbit.modelRangeJD[0]}–{orbit.modelRangeJD[1]}. {outsideLocalModel ? 'This date is outside that interval; propagation is illustrative.' : 'This interval is not an accuracy guarantee.'}</p>
+              )}
+              {orbit.provenance?.sourceUrls.map((url, index) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" className="block underline text-sky-300">Orbital source {index + 1}</a>
+              ))}
+              {!orbit.provenance?.sourceUrls.length && <p>No verified record-level orbital source is available.</p>}
+            </>
+          ) : <p>The Sun is the heliocentric origin. Its surface rotation and texture orientation are illustrative.</p>}
+        </section>
 
         {/* Atmosphere Composition */}
         {body.physical.atmosphere && body.physical.atmosphere.length > 0 && (

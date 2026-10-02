@@ -9,31 +9,43 @@ export type CameraMode = 'free' | 'focus' | 'follow' | 'top' | 'ecliptic';
 export type CelestialType = 'star' | 'planet' | 'dwarf' | 'moon' | 'comet' | 'asteroid';
 
 /**
- * Keplerian orbital elements referenced to J2000.0 epoch (heliocentric ecliptic)
+ * Fixed Keplerian elements; each catalog record declares its numerical epoch and plane.
  */
-export interface OrbitalElements {
+export interface OrbitMetadata {
+  /** Julian date of the numerical element epoch; UTC is treated as approximate dynamical time. */
+  epochJD?: number;
+  referencePlane?: 'ecliptic-j2000' | 'parent-equator';
+  /** Exact source of these numbers, or explicitly unverified legacy/illustrative data. */
+  provenance?: { status: 'sourced' | 'illustrative' | 'mixed'; sourceUrls: string[]; note: string };
+  /** Local comparison interval, not an accuracy guarantee. Outside it propagation is illustrative. */
+  modelRangeJD?: [number, number];
+}
+
+export interface OrbitalElements extends OrbitMetadata {
   /** Semi-major axis in Astronomical Units (AU) */
   a: number;
   /** Eccentricity (dimensionless, 0 <= e < 1 for elliptical orbits) */
   e: number;
-  /** Inclination to ecliptic plane (degrees) */
+  /** Directed inclination to the declared reference plane (0–180 degrees). */
   i: number;
   /** Longitude of the ascending node (degrees) */
   om: number; // Ω (Omega)
-  /** Argument of periapsis (degrees) or longitude of perihelion */
+  /** Argument of periapsis in degrees; never longitude of perihelion. */
   w: number;  // ω (omega)
-  /** Mean anomaly at epoch J2000 (degrees) */
+  /** Mean anomaly at the declared numerical epoch (degrees). */
   ma0: number; // M0
-  /** Orbital period in Julian days (or Earth years) */
+  /** Positive orbital period in days; direction is encoded by inclination. */
   periodDays: number;
   /** Longitude of perihelion varpi = om + w (optional for quick calculation) */
   varpi?: number;
+  /** Optional perihelion-passage Julian date; replaces ma0-based phase, not the element epoch. */
+  perihelionJD?: number;
 }
 
 /**
  * Moon orbital elements relative to parent planet
  */
-export interface MoonOrbitalElements {
+export interface MoonOrbitalElements extends OrbitMetadata {
   /** Semi-major axis in kilometers */
   aKm: number;
   /** Eccentricity */
@@ -46,12 +58,12 @@ export interface MoonOrbitalElements {
   w: number;
   /** Mean anomaly at epoch (degrees) */
   ma0: number;
-  /** Orbital period in Earth days */
+  /** Positive orbital period in days. Inclination alone encodes orbital direction. */
   periodDays: number;
 }
 
 /**
- * Physical characteristics of a celestial body (NASA/JPL values)
+ * Physical/illustrative catalog characteristics; record provenance must be checked before scientific reuse.
  */
 export interface PhysicalProperties {
   /** Volumetric mean radius in km */
@@ -64,7 +76,7 @@ export interface PhysicalProperties {
   densityGcm3: number;
   /** Escape velocity in km/s */
   escapeVelocityKms: number;
-  /** Sidereal rotation period in Earth hours (negative for retrograde) */
+  /** Sidereal period in hours; legacy negative signs are descriptive. Directed pole determines rendered direction. */
   rotationPeriodHours: number;
   /** Axial tilt / obliquity to orbit (degrees) */
   axialTiltDeg: number;

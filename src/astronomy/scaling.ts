@@ -77,9 +77,9 @@ export function scalePosition(posAU: Vector3D, mode: ScaleMode): Vector3D {
 
     case 'educational':
     default:
-      // Monotonic pedagogical power curve: 20 * r^0.65
-      // Inner planets: 0.387 AU -> ~10.7, 1 AU -> 20.0, 5.2 AU -> ~58.5, 30 AU -> ~183.5
-      scaledR = 20 * Math.pow(r, 0.65);
+      // Minimum calibration: Mercury perihelion center > Sun radius + Mercury radius + 0.25.
+      // 25 * r^0.65 preserves direction and monotonic spacing; physical/real scale is unchanged.
+      scaledR = 25 * Math.pow(r, 0.65);
       break;
   }
 

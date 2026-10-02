@@ -1,9 +1,10 @@
 /**
- * 3D Solar System Simulator — Real Astronomical Catalog (NASA/JPL/IAU)
- * Contains precise orbital elements, physical constants, and atmospheric data.
+ * Educational catalog with explicit record-level orbital provenance.
+ * Legacy values remain illustrative unless independently sourced below.
  */
 
 import { CelestialBody } from './types';
+import { J2000_JD } from './constants';
 
 export const CELESTIAL_BODIES: CelestialBody[] = [
   // ==================== SUN ====================
@@ -100,7 +101,7 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
       e: 0.016709,
       i: 0.00005,
       om: -11.260,
-      w: 102.947,
+      w: 114.207, // Longitude of perihelion 102.947 minus ascending node -11.260.
       ma0: 357.517,
       periodDays: 365.256,
     },
@@ -871,7 +872,7 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
       om: 177.0,
       w: 320.0,
       ma0: 80.0,
-      periodDays: -5.877,
+      periodDays: 5.877, // Retrograde is encoded by inclination, not negative time.
     },
     physical: {
       radiusKm: 1353.4,
@@ -927,13 +928,17 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
     name: '1P/Halley',
     type: 'comet',
     orbitalElements: {
-      a: 17.834,
-      e: 0.96714, // Extreme eccentricity
+      a: 17.94,
+      e: 1 - 0.5871 / 17.94, // NASA radial/event calibration; orientation remains illustrative.
       i: 162.26,  // Retrograde inclination
       om: 58.42,
       w: 111.33,
-      ma0: 38.38,
-      periodDays: 27500, // ~75.3 years
+      ma0: 0,
+      perihelionJD: 2446470.5, // NASA 1986-02-09, day precision only.
+      periodDays: 365.2568983 * Math.pow(17.94, 1.5),
+      epochJD: 2446470.5,
+      modelRangeJD: [2446440.5, 2446500.5],
+      provenance: { status: 'mixed', sourceUrls: ['https://science.nasa.gov/solar-system/comets/1p-halley/', 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/cometfact.html'], note: 'Event-local radial model: sourced perihelion date/distance and rounded semimajor axis; legacy node/periapsis angles are unverified. No predictive return accuracy.' },
     },
     physical: {
       radiusKm: 5.5,
@@ -957,13 +962,17 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
     name: '2P/Encke',
     type: 'comet',
     orbitalElements: {
-      a: 2.215,
-      e: 0.8483,
+      a: 2.21,
+      e: 1 - 0.340 / 2.21,
       i: 11.78,
       om: 334.57,
       w: 186.54,
-      ma0: 110.0,
-      periodDays: 1204, // 3.30 years (shortest known)
+      ma0: 0,
+      perihelionJD: 2453001.5, // NASA 2003-12-28, day precision only.
+      periodDays: 365.2568983 * Math.pow(2.21, 1.5),
+      epochJD: 2453001.5,
+      modelRangeJD: [2452971.5, 2453031.5],
+      provenance: { status: 'mixed', sourceUrls: ['https://nssdc.gsfc.nasa.gov/planetary/factsheet/cometfact.html'], note: 'Event-local radial model: sourced date, distance and rounded semimajor axis; legacy orientation is unverified. Other returns are illustrative.' },
     },
     physical: {
       radiusKm: 2.4,
@@ -987,13 +996,17 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
     name: 'C/1995 O1 (Hale-Bopp)',
     type: 'comet',
     orbitalElements: {
-      a: 186.0,
-      e: 0.9951,
-      i: 89.43,
-      om: 282.47,
-      w: 130.59,
-      ma0: 1.0,
-      periodDays: 925000, // ~2530 years
+      a: 0.9141178 / (1 - 0.9950967),
+      e: 0.9950967,
+      i: 89.42975,
+      om: 282.47076,
+      w: 130.59092,
+      ma0: 0,
+      perihelionJD: 2450539.63838,
+      periodDays: 365.2568983 * Math.pow(0.9141178 / (1 - 0.9950967), 1.5),
+      epochJD: 2450540.5,
+      modelRangeJD: [2450508.5, 2450570.5],
+      provenance: { status: 'sourced', sourceUrls: ['https://space.physics.uiowa.edu/vis/hale-bopp-ephem.html'], note: 'D. Yeomans, JPL solution 55, April 2 1997 local osculating elements in J2000 ecliptic, TDB. Two-body propagation; perturbations are omitted.' },
     },
     physical: {
       radiusKm: 30.0, // Exceptionally huge nucleus (~60 km diameter)
@@ -1012,6 +1025,50 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
     textureType: 'comet',
   },
 ];
+
+// Legacy numbers have no recoverable record-level source. Declare the intended simulation
+// epoch and frame without pretending that their phase/pole orientation is an ephemeris.
+for (const body of CELESTIAL_BODIES) {
+  const orbit = body.orbitalElements ?? body.moonOrbitalElements;
+  if (!orbit) continue;
+  orbit.epochJD ??= J2000_JD;
+  orbit.referencePlane = body.moonOrbitalElements && body.id !== 'moon' ? 'parent-equator' : 'ecliptic-j2000';
+  orbit.provenance ??= {
+    status: 'illustrative', sourceUrls: [],
+    note: 'Legacy catalog values with unverified record-level provenance. J2000 is the assumed numerical phase epoch. Satellite phase/node/periapsis and static parent pole azimuth are illustrative.',
+  };
+}
+
+/** Validate catalog boundaries independently of rendering. Returns errors rather than hiding bad records. */
+export function validateCatalog(bodies: CelestialBody[]): string[] {
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  for (const body of bodies) {
+    if (ids.has(body.id)) errors.push(`${body.id}: duplicate ID`);
+    ids.add(body.id);
+  }
+  for (const body of bodies) {
+    if (body.parentId && (!ids.has(body.parentId) || body.parentId === body.id)) errors.push(`${body.id}: invalid parent`);
+    for (const [key,value] of Object.entries(body.physical)) {
+      if (typeof value === 'number' && !Number.isFinite(value)) errors.push(`${body.id}: nonfinite ${key}`);
+    }
+    if (body.physical.radiusKm <= 0 || body.physical.massKg <= 0 || body.physical.rotationPeriodHours === 0 || body.physical.axialTiltDeg < 0 || body.physical.axialTiltDeg > 180) errors.push(`${body.id}: invalid physical domain`);
+    const orbit = body.orbitalElements ?? body.moonOrbitalElements;
+    if (!orbit) {
+      if (body.type !== 'star') errors.push(`${body.id}: missing orbit`);
+      continue;
+    }
+    for (const [key,value] of Object.entries(orbit)) {
+      if (typeof value === 'number' && !Number.isFinite(value)) errors.push(`${body.id}: nonfinite ${key}`);
+    }
+    const axis = 'a' in orbit ? orbit.a : orbit.aKm;
+    if (!(axis > 0 && orbit.e >= 0 && orbit.e < 1 && orbit.i >= 0 && orbit.i <= 180 && orbit.periodDays > 0)) errors.push(`${body.id}: invalid orbital domain`);
+    if (!Number.isFinite(orbit.epochJD) || !['ecliptic-j2000','parent-equator'].includes(orbit.referencePlane ?? '') || !orbit.provenance) errors.push(`${body.id}: missing conventions/provenance`);
+    if (body.moonOrbitalElements && !body.parentId) errors.push(`${body.id}: missing moon parent`);
+    if (orbit.modelRangeJD && (!orbit.modelRangeJD.every(Number.isFinite) || orbit.modelRangeJD[0] > orbit.modelRangeJD[1])) errors.push(`${body.id}: invalid local range`);
+  }
+  return errors;
+}
 
 /**
  * Quick lookup maps by ID

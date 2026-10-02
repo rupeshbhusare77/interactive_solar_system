@@ -19,6 +19,7 @@ import {
 import { useSimulation } from '../../state/simulationContext';
 import { HISTORIC_EVENTS } from '../../astronomy/constants';
 import { dateToJulianDate } from '../../astronomy/kepler';
+import { SIMULATION_MIN_DATE, SIMULATION_MAX_DATE, SIMULATION_DATE_RANGE_LABEL } from '../../astronomy/modelContract';
 
 const SPEED_PRESETS = [
   { label: 'Real', value: 1 },
@@ -34,6 +35,7 @@ export const TimelineControls: React.FC = () => {
   const {
     simulationDate,
     setSimulationDate,
+    dateError,
     isPlaying,
     togglePlay,
     speedMultiplier,
@@ -55,13 +57,10 @@ export const TimelineControls: React.FC = () => {
     setSpeedMultiplier(-speedMultiplier);
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value) {
-      const selected = new Date(e.target.value);
-      if (!isNaN(selected.getTime())) {
-        setSimulationDate(selected);
-      }
-    }
+  const handleDateApply = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const value = new FormData(e.currentTarget).get('simulation-date');
+    setSimulationDate(new Date(`${value}T00:00:00Z`));
   };
 
   const formatDateString = (d: Date) => {
@@ -69,7 +68,7 @@ export const TimelineControls: React.FC = () => {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-4xl glass-panel rounded-xl p-3 border border-white/10 shadow-2xl flex flex-col gap-2.5 pointer-events-auto">
+    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-4xl glass-panel rounded-xl p-3 border border-white/10 shadow-2xl flex flex-col gap-2.5 pointer-events-auto">
       {/* Top row: Date/Time display & quick buttons */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
         {/* Live Simulation Clock HUD */}
@@ -144,17 +143,21 @@ export const TimelineControls: React.FC = () => {
             </button>
 
             {isDatePickerOpen && (
-              <div className="absolute bottom-full right-0 mb-2 p-3 glass-panel rounded-lg border border-zinc-700 shadow-2xl z-50 flex flex-col gap-2">
-                <label className="text-[10px] font-mono text-zinc-400 uppercase">
-                  Select Calendar Date
+              <form noValidate onSubmit={handleDateApply} className="absolute bottom-full right-0 mb-2 p-3 glass-panel rounded-lg border border-zinc-700 shadow-2xl z-50 flex flex-col gap-2">
+                <label htmlFor="simulation-date" className="text-[10px] font-mono text-zinc-400 uppercase">
+                  Select UTC Date ({SIMULATION_DATE_RANGE_LABEL})
                 </label>
                 <input
                   type="date"
-                  value={formatDateString(simulationDate)}
-                  onChange={handleDateChange}
+                  id="simulation-date"
+                  name="simulation-date"
+                  min={formatDateString(SIMULATION_MIN_DATE)}
+                  max={formatDateString(SIMULATION_MAX_DATE)}
+                  defaultValue={formatDateString(simulationDate)}
                   className="bg-black/80 border border-zinc-700 text-white rounded px-2.5 py-1 text-xs font-mono focus:outline-none focus:border-sky-500"
                 />
-              </div>
+                <button type="submit" className="glass-button rounded px-2 py-1 text-xs text-sky-300">Apply UTC Date</button>
+              </form>
             )}
           </div>
 
@@ -170,6 +173,7 @@ export const TimelineControls: React.FC = () => {
         </div>
       </div>
 
+      {dateError && <p role="alert" className="text-xs text-amber-300">{dateError}</p>}
       {/* Bottom row: Playback Controls & Speed Presets */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Transport Buttons */}

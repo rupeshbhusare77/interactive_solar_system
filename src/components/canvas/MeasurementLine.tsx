@@ -9,8 +9,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
-import { calculateEphemeris, distanceBetween } from '../../astronomy/kepler';
-import { scalePosition } from '../../astronomy/scaling';
+import { resolveBodyPosition, distanceBetween } from '../../astronomy/kepler';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 export const MeasurementLine: React.FC = () => {
@@ -46,18 +45,12 @@ export const MeasurementLine: React.FC = () => {
   useFrame(() => {
     if (!originBody || !targetBody || originBody.id === targetBody.id) return;
 
-    // Get 3D heliocentric position in AU
-    const posA_AU = originBody.id === 'sun'
-      ? { x: 0, y: 0, z: 0 }
-      : originBody.orbitalElements
-      ? calculateEphemeris(originBody.orbitalElements, simulationDate).positionAU
-      : { x: 0, y: 0, z: 0 };
-
-    const posB_AU = targetBody.id === 'sun'
-      ? { x: 0, y: 0, z: 0 }
-      : targetBody.orbitalElements
-      ? calculateEphemeris(targetBody.orbitalElements, simulationDate).positionAU
-      : { x: 0, y: 0, z: 0 };
+    const positionA = resolveBodyPosition(originBody.id,simulationDate,scaleMode);
+    const positionB = resolveBodyPosition(targetBody.id,simulationDate,scaleMode);
+    if (!positionA || !positionB) { lineObject.visible = false; return; }
+    lineObject.visible = true;
+    const posA_AU = positionA.physicalAU;
+    const posB_AU = positionB.physicalAU;
 
     // Real astronomical distance in AU
     const distAU = distanceBetween(posA_AU, posB_AU);
@@ -81,8 +74,8 @@ export const MeasurementLine: React.FC = () => {
     setHudData({ distAU, distMillionKm, lightTimeStr });
 
     // Scaled Three.js world coordinates
-    const scaledA = scalePosition(posA_AU, scaleMode);
-    const scaledB = scalePosition(posB_AU, scaleMode);
+    const scaledA = positionA.displayPosition;
+    const scaledB = positionB.displayPosition;
 
     const posAttr = lineGeometry.attributes.position as THREE.BufferAttribute;
     posAttr.setXYZ(0, scaledA.x, scaledA.y, scaledA.z);

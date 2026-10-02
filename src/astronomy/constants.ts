@@ -14,7 +14,7 @@ export const SPEED_OF_LIGHT_AU_SEC = SPEED_OF_LIGHT_KMS / KM_PER_AU; // ~2.00398
 /** Light travel time per AU in seconds (approx 499.00478 seconds = ~8.3167 minutes) */
 export const LIGHT_SECONDS_PER_AU = KM_PER_AU / SPEED_OF_LIGHT_KMS;
 
-/** J2000.0 epoch in Julian Date (2000 January 1.5 TT = 2000-01-01T12:00:00Z) */
+/** J2000.0 Julian date in TT. The educational UTC calculation omits TT/TDB conversion. */
 export const J2000_JD = 2451545.0;
 
 /** Solar radius in kilometers */
@@ -57,7 +57,7 @@ export const HISTORIC_EVENTS: HistoricEvent[] = [
   {
     name: 'Halley Perihelion 1986',
     date: '1986-02-09T00:00:00Z',
-    description: 'Halley\'s Comet closest approach to the Sun at 0.586 AU.',
+    description: 'NASA day-level perihelion date; local radial model calibrated to 0.587 AU. Orientation is illustrative.',
     focusBodyId: 'halley',
   },
   {
@@ -79,9 +79,9 @@ export const HISTORIC_EVENTS: HistoricEvent[] = [
     focusBodyId: 'jupiter',
   },
   {
-    name: 'Halley Next Perihelion 2061',
+    name: 'Halley 2061 Return (Approximate)',
     date: '2061-07-28T12:00:00Z',
-    description: 'Halley\'s Comet next perihelion return in the inner solar system.',
+    description: 'Expected return date is approximate. The fixed 1986 local model is extrapolated and cannot predict this return accurately.',
     focusBodyId: 'halley',
   },
 ];

@@ -3,8 +3,10 @@
  * Implements Kepler's Equation and 3D Orbital Mechanics from First Principles
  */
 
-import { OrbitalElements, MoonOrbitalElements, Vector3D, Ephemeris } from './types';
+import { OrbitalElements, MoonOrbitalElements, Vector3D, Ephemeris, ScaleMode } from './types';
 import { J2000_JD, KM_PER_AU } from './constants';
+import { CELESTIAL_BODY_MAP } from './celestialData';
+import { scalePosition, scaleMoonOffset, scaleRadius } from './scaling';
 
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
@@ -88,13 +90,14 @@ export function calculateEphemeris(
   date: Date,
   rotationPeriodHours?: number
 ): Ephemeris {
-  const d = getDaysSinceJ2000(date);
+  const jd = dateToJulianDate(date);
+  const d = jd - (elements.epochJD ?? J2000_JD);
 
   // Mean motion n (degrees per day)
   const n = 360 / elements.periodDays;
 
   // Mean anomaly M at time d
-  let M_deg = (elements.ma0 + n * d) % 360;
+  let M_deg = (elements.perihelionJD === undefined ? elements.ma0 + n * d : n * (jd - elements.perihelionJD)) % 360;
   if (M_deg < 0) M_deg += 360;
   const M_rad = M_deg * DEG2RAD;
 
@@ -147,19 +150,19 @@ export function calculateEphemeris(
   // Planetary axial rotation angle around its own spin axis
   let rotationAngleDeg = 0;
   if (rotationPeriodHours && rotationPeriodHours !== 0) {
-    const rotationDegreesPerDay = (24 / rotationPeriodHours) * 360;
+    // Direction is carried by the directed pole, not a second reversal in local spin.
+    const rotationDegreesPerDay = (24 / Math.abs(rotationPeriodHours)) * 360;
     rotationAngleDeg = ((rotationDegreesPerDay * d) % 360 + 360) % 360;
   }
 
-  // Velocity calculation (approximate in AU/day)
-  // GM_sun = 0.000295912208 AU^3 / day^2
-  const mu = 0.000295912208;
-  const speed = Math.sqrt(mu * (2 / r - 1 / elements.a));
-  // Tangential velocity vector components
+  // Analytic derivative of the same fixed-element model, rotated into the world frame.
+  const eccentricRate = n * DEG2RAD / (1 - elements.e * Math.cos(E_rad));
+  const radialRate = elements.a * elements.e * Math.sin(E_rad) * eccentricRate;
+  const transverseRate = r * Math.sqrt(1 - elements.e * elements.e) * eccentricRate / (1 - elements.e * Math.cos(E_rad));
   const velocityAUDay: Vector3D = {
-    x: -speed * Math.sin(nu_rad),
-    y: 0,
-    z: speed * Math.cos(nu_rad),
+    x: radialRate * (cosOm * cosU - sinOm * sinU * cosI) + transverseRate * (-cosOm * sinU - sinOm * cosU * cosI),
+    y: radialRate * sinU * sinI + transverseRate * cosU * sinI,
+    z: -(radialRate * (sinOm * cosU + cosOm * sinU * cosI) + transverseRate * (-sinOm * sinU + cosOm * cosU * cosI)),
   };
 
   return {
@@ -177,9 +180,10 @@ export function calculateEphemeris(
  */
 export function calculateMoonEphemeris(
   moonElements: MoonOrbitalElements,
-  date: Date
+  date: Date,
+  parentTiltDeg: number = 0
 ): { offsetAU: Vector3D; distanceKm: number } {
-  const d = getDaysSinceJ2000(date);
+  const d = dateToJulianDate(date) - (moonElements.epochJD ?? J2000_JD);
   const n = 360 / moonElements.periodDays;
 
   let M_deg = (moonElements.ma0 + n * d) % 360;
@@ -212,14 +216,31 @@ export function calculateMoonEphemeris(
   const y = rAU * (sinOm * cosU + cosOm * sinU * cosI);
   const z = rAU * (sinU * sinI);
 
+  const offsetAU = rotateParentEquator({x,y:z,z:-y}, moonElements, parentTiltDeg);
   return {
-    offsetAU: {
-      x,
-      y: z,
-      z: -y,
-    },
+    offsetAU,
     distanceKm: rKm,
   };
+}
+
+/** Static illustrative pole uses the same world-X tilt as the planet surface/rings. */
+export function rotateParentEquator(vector: Vector3D, elements: MoonOrbitalElements, parentTiltDeg: number): Vector3D {
+  if (elements.referencePlane !== 'parent-equator') return vector;
+  const tilt = parentTiltDeg * DEG2RAD;
+  return {x:vector.x,y:vector.y*Math.cos(tilt)-vector.z*Math.sin(tilt),z:vector.y*Math.sin(tilt)+vector.z*Math.cos(tilt)};
+}
+
+/** Directed spin pole in world coordinates; signed catalog periods are descriptive only. */
+export function calculateSpinAxis(tiltDeg: number): Vector3D {
+  const tilt = tiltDeg * DEG2RAD;
+  return {x:0,y:Math.cos(tilt),z:Math.sin(tilt)};
+}
+
+/** Satellite spin follows its directed orbital pole in this simplified synchronous model. */
+export function calculateMoonSpinAxis(elements: MoonOrbitalElements, parentTiltDeg: number): Vector3D {
+  const inclination = elements.i * DEG2RAD;
+  const node = elements.om * DEG2RAD;
+  return rotateParentEquator({x:Math.sin(node)*Math.sin(inclination),y:Math.cos(inclination),z:Math.cos(node)*Math.sin(inclination)},elements,parentTiltDeg);
 }
 
 /**
@@ -276,4 +297,36 @@ export function distanceBetween(posA: Vector3D, posB: Vector3D): number {
   const dy = posA.y - posB.y;
   const dz = posA.z - posB.z;
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+export interface ResolvedBodyPosition {
+  physicalAU: Vector3D;
+  displayPosition: Vector3D;
+  offsetAU?: Vector3D;
+  displayOffset?: Vector3D;
+}
+
+/** Physical heliocentric coordinates and deliberately separate parent-relative display scaling. */
+export function resolveBodyPosition(id: string, date: Date, mode: ScaleMode = 'real', ancestors: Set<string> = new Set()): ResolvedBodyPosition | null {
+  if (!Number.isFinite(date.getTime()) || ancestors.has(id)) return null;
+  const body = CELESTIAL_BODY_MAP.get(id);
+  if (!body) return null;
+  if (body.id === 'sun') return {physicalAU:{x:0,y:0,z:0},displayPosition:{x:0,y:0,z:0}};
+  if (body.orbitalElements) {
+    const physicalAU = calculateEphemeris(body.orbitalElements,date).positionAU;
+    if (!Object.values(physicalAU).every(Number.isFinite)) return null;
+    return {physicalAU,displayPosition:scalePosition(physicalAU,mode)};
+  }
+  if (!body.moonOrbitalElements || !body.parentId) return null;
+  const parent = CELESTIAL_BODY_MAP.get(body.parentId);
+  const parentPosition = resolveBodyPosition(body.parentId,date,mode,new Set([...ancestors,id]));
+  if (!parent || !parentPosition) return null;
+  const {offsetAU} = calculateMoonEphemeris(body.moonOrbitalElements,date,parent.physical.axialTiltDeg);
+  if (!Object.values(offsetAU).every(Number.isFinite)) return null;
+  const displayOffset = scaleMoonOffset(offsetAU,scaleRadius(parent.physical.radiusKm,parent.type,mode,parent.id),mode);
+  return {
+    physicalAU:{x:parentPosition.physicalAU.x+offsetAU.x,y:parentPosition.physicalAU.y+offsetAU.y,z:parentPosition.physicalAU.z+offsetAU.z},
+    displayPosition:{x:parentPosition.displayPosition.x+displayOffset.x,y:parentPosition.displayPosition.y+displayOffset.y,z:parentPosition.displayPosition.z+displayOffset.z},
+    offsetAU,displayOffset,
+  };
 }

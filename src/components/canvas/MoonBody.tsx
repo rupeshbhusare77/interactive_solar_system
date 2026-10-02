@@ -9,8 +9,9 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
-import { calculateMoonEphemeris } from '../../astronomy/kepler';
-import { scaleRadius, scaleMoonOffset } from '../../astronomy/scaling';
+import { resolveBodyPosition, calculateMoonSpinAxis, getDaysSinceJ2000 } from '../../astronomy/kepler';
+import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
+import { scaleRadius } from '../../astronomy/scaling';
 import { useSimulation } from '../../state/simulationContext';
 import { loadPlanetTexture } from '../../textures/textureLoader';
 import { getCelestialBumpMap } from '../../textures/proceduralTextures';
@@ -33,6 +34,11 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
 
   const moonGroupRef = useRef<THREE.Group>(null);
   const moonMeshRef = useRef<THREE.Mesh>(null);
+  const spinPole = useMemo(() => {
+    const parentTilt = CELESTIAL_BODY_MAP.get(moon.parentId ?? '')?.physical.axialTiltDeg ?? 0;
+    const axis = moon.moonOrbitalElements ? calculateMoonSpinAxis(moon.moonOrbitalElements,parentTilt) : {x:0,y:1,z:0};
+    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(axis.x,axis.y,axis.z));
+  },[moon]);
 
   // Calibrated moon radius by ID
   const radius = scaleRadius(moon.physical.radiusKm, 'moon', scaleMode, moon.id);
@@ -67,15 +73,16 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
   useFrame(() => {
     if (!moon.moonOrbitalElements || !moonGroupRef.current) return;
 
-    const { offsetAU } = calculateMoonEphemeris(moon.moonOrbitalElements, simulationDate);
-    const scaledOffset = scaleMoonOffset(offsetAU, parentVisualRadius, scaleMode);
+    const scaledOffset = resolveBodyPosition(moon.id,simulationDate,scaleMode)?.displayOffset;
+    if (!scaledOffset) return;
 
     moonGroupRef.current.position.set(scaledOffset.x, scaledOffset.y, scaledOffset.z);
 
     // Synchronous or sidereal rotation
     if (moonMeshRef.current && moon.physical.rotationPeriodHours) {
-      const rotSpeed = 24 / moon.physical.rotationPeriodHours;
-      moonMeshRef.current.rotation.y = (simulationDate.getTime() / 86400000) * rotSpeed * Math.PI * 2;
+      const rotSpeed = 24 / Math.abs(moon.physical.rotationPeriodHours);
+      moonMeshRef.current.quaternion.copy(spinPole);
+      moonMeshRef.current.rotateY(getDaysSinceJ2000(simulationDate) * rotSpeed * Math.PI * 2);
     }
   });
 

@@ -4,11 +4,13 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { ScaleMode, CameraMode, ViewToggles } from '../astronomy/types';
+import { clampSimulationDate, validateSimulationDate, SIMULATION_MIN_DATE, SIMULATION_MAX_DATE } from '../astronomy/modelContract';
 
 export interface SimulationContextType {
   // Time and animation
   simulationDate: Date;
   setSimulationDate: (date: Date) => void;
+  dateError: string | null;
   isPlaying: boolean;
   togglePlay: () => void;
   speedMultiplier: number;
@@ -57,7 +59,13 @@ const defaultToggles: ViewToggles = {
 const SimulationContext = createContext<SimulationContextType | null>(null);
 
 export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [simulationDate, setSimulationDate] = useState<Date>(() => new Date());
+  const [simulationDate, updateSimulationDate] = useState<Date>(() => clampSimulationDate(new Date()));
+  const [dateError, setDateError] = useState<string | null>(null);
+  const setSimulationDate = useCallback((date: Date) => {
+    const error = validateSimulationDate(date);
+    setDateError(error);
+    if (!error) updateSimulationDate(new Date(date.getTime()));
+  }, []);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   // Default speed: 1 day per real second (86400 sim seconds / real second)
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(86400 * 3);
@@ -84,9 +92,9 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       lastTimeRef.current = now;
 
       if (isPlaying && deltaSec > 0 && deltaSec < 1.0) {
-        setSimulationDate((prevDate) => {
+        updateSimulationDate((prevDate) => {
           const simDeltaMs = deltaSec * speedMultiplier * 1000;
-          return new Date(prevDate.getTime() + simDeltaMs);
+          return clampSimulationDate(new Date(prevDate.getTime() + simDeltaMs));
         });
       }
 
@@ -99,12 +107,26 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return () => cancelAnimationFrame(animId);
   }, [isPlaying, speedMultiplier]);
 
+  useEffect(() => {
+    const timestamp = simulationDate.getTime();
+    if (isPlaying && ((speedMultiplier > 0 && timestamp >= SIMULATION_MAX_DATE.getTime()) ||
+      (speedMultiplier < 0 && timestamp <= SIMULATION_MIN_DATE.getTime()))) {
+      setIsPlaying(false);
+      setDateError('Playback paused at the 1800–2100 UTC navigation limit. Reverse direction or choose another date.');
+    }
+  }, [simulationDate, isPlaying, speedMultiplier]);
+
   const togglePlay = useCallback(() => {
     setIsPlaying((prev) => !prev);
   }, []);
 
   const stepTime = useCallback((days: number) => {
-    setSimulationDate((prev) => new Date(prev.getTime() + days * 86400 * 1000));
+    if (!Number.isFinite(days)) {
+      setDateError('Enter a finite number of days.');
+      return;
+    }
+    setDateError(null);
+    updateSimulationDate((prev) => clampSimulationDate(new Date(prev.getTime() + days * 86400 * 1000)));
   }, []);
 
   const resetToNow = useCallback(() => {
@@ -127,6 +149,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       value={{
         simulationDate,
         setSimulationDate,
+        dateError,
         isPlaying,
         togglePlay,
         speedMultiplier,
