@@ -22,3 +22,7 @@ Desktop.ini
 
 # Local project reference for coding assistants.
 /PROJECT_CONTEXT.md
+
+# Local project audit and task planning documents.
+/docs/PROJECT_AUDIT.md
+/docs/TASK_BACKLOG.md
