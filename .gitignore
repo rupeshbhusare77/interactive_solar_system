@@ -1,0 +1,24 @@
+# Dependencies and generated output.
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local environment variables. Keep sanitized examples shareable.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and operating system files.
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Personal editor settings.
+.vscode/
+.idea/
+
+# Local project reference for coding assistants.
+/PROJECT_CONTEXT.md
