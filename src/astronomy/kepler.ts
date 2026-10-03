@@ -8,6 +8,9 @@ import { J2000_JD, KM_PER_AU } from './constants';
 import { CELESTIAL_BODY_MAP } from './celestialData';
 import { scalePosition, scaleMoonOffset, scaleRadius } from './scaling';
 
+import { poleVector, equatorialToWorld } from './scienceCatalog';
+import { referenceState } from './referenceEphemeris';
+
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 const TWO_PI = 2 * Math.PI;
@@ -225,6 +228,13 @@ export function calculateMoonEphemeris(
 
 /** Static illustrative pole uses the same world-X tilt as the planet surface/rings. */
 export function rotateParentEquator(vector: Vector3D, elements: MoonOrbitalElements, parentTiltDeg: number): Vector3D {
+  if ((elements.referencePlane === 'laplace' || elements.referencePlane === 'parent-equator') && elements.poleRA !== undefined && elements.poleDec !== undefined) {
+    const pole=poleVector(elements.poleRA,elements.poleDec);
+    const ra=elements.poleRA*Math.PI/180;
+    const prime=equatorialToWorld(-Math.sin(ra),Math.cos(ra),0);
+    const tangent={x:pole.y*prime.z-pole.z*prime.y,y:pole.z*prime.x-pole.x*prime.z,z:pole.x*prime.y-pole.y*prime.x};
+    return {x:prime.x*vector.x+pole.x*vector.y-tangent.x*vector.z,y:prime.y*vector.x+pole.y*vector.y-tangent.y*vector.z,z:prime.z*vector.x+pole.z*vector.y-tangent.z*vector.z};
+  }
   if (elements.referencePlane !== 'parent-equator') return vector;
   const tilt = parentTiltDeg * DEG2RAD;
   return {x:vector.x,y:vector.y*Math.cos(tilt)-vector.z*Math.sin(tilt),z:vector.y*Math.sin(tilt)+vector.z*Math.cos(tilt)};
@@ -313,7 +323,7 @@ export function resolveBodyPosition(id: string, date: Date, mode: ScaleMode = 'r
   if (!body) return null;
   if (body.id === 'sun') return {physicalAU:{x:0,y:0,z:0},displayPosition:{x:0,y:0,z:0}};
   if (body.orbitalElements) {
-    const physicalAU = calculateEphemeris(body.orbitalElements,date).positionAU;
+    const physicalAU = referenceState(id,date)?.position ?? calculateEphemeris(body.orbitalElements,date).positionAU;
     if (!Object.values(physicalAU).every(Number.isFinite)) return null;
     return {physicalAU,displayPosition:scalePosition(physicalAU,mode)};
   }
@@ -321,9 +331,9 @@ export function resolveBodyPosition(id: string, date: Date, mode: ScaleMode = 'r
   const parent = CELESTIAL_BODY_MAP.get(body.parentId);
   const parentPosition = resolveBodyPosition(body.parentId,date,mode,new Set([...ancestors,id]));
   if (!parent || !parentPosition) return null;
-  const {offsetAU} = calculateMoonEphemeris(body.moonOrbitalElements,date,parent.physical.axialTiltDeg);
+  const offsetAU = referenceState(id,date)?.position ?? calculateMoonEphemeris(body.moonOrbitalElements,date,parent.physical.axialTiltDeg).offsetAU;
   if (!Object.values(offsetAU).every(Number.isFinite)) return null;
-  const displayOffset = scaleMoonOffset(offsetAU,scaleRadius(parent.physical.radiusKm,parent.type,mode,parent.id),mode);
+  const displayOffset = scaleMoonOffset(offsetAU,scaleRadius(parent.physical.radiusKm,parent.type,mode,parent.id),mode,parent.rings?parent.physical.radiusKm:undefined);
   return {
     physicalAU:{x:parentPosition.physicalAU.x+offsetAU.x,y:parentPosition.physicalAU.y+offsetAU.y,z:parentPosition.physicalAU.z+offsetAU.z},
     displayPosition:{x:parentPosition.displayPosition.x+displayOffset.x,y:parentPosition.displayPosition.y+displayOffset.y,z:parentPosition.displayPosition.z+displayOffset.z},

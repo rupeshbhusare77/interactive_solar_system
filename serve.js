@@ -1,71 +1,64 @@
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import http from 'node:http';
+import fs from 'node:fs';
+import { readFile, realpath, stat } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DIST_DIR = path.join(__dirname, 'dist');
-const PORT = 5173;
-
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'application/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
+const mime = {
+  '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.json': 'application/json',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+};
+const contains = (root, file) => {
+  const relative = path.relative(root, file);
+  return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
 };
 
-const server = http.createServer((req, res) => {
-  let reqPath = req.url.split('?')[0];
-  if (reqPath === '/') reqPath = '/index.html';
-
-  const filePath = path.join(DIST_DIR, reqPath);
-
-  // Security check: must stay within DIST_DIR
-  if (!filePath.startsWith(DIST_DIR)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
-  }
-
-  fs.stat(filePath, (err, stats) => {
-    if (err || !stats.isFile()) {
-      // Fallback to index.html for SPA client-side routing
-      const fallbackPath = path.join(DIST_DIR, 'index.html');
-      fs.readFile(fallbackPath, (readErr, content) => {
-        if (readErr) {
-          res.writeHead(404);
-          res.end('Not Found');
-        } else {
-          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(content);
-        }
-      });
-      return;
+/** Local preview only. Missing paths remain 404s because this application has no client routes. */
+export function createStaticServer(directory, { base = '/' } = {}) {
+  const root = fs.realpathSync(directory);
+  if (!base.startsWith('/') || !base.endsWith('/') || base.includes('..') || base.includes('\\')) throw new Error('Invalid base path.');
+  return http.createServer(async (req, res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'no-cache');
+    const fail = (code, message) => { res.writeHead(code); res.end(message); };
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      res.setHeader('Allow', 'GET, HEAD'); fail(405, 'Method Not Allowed'); return;
     }
-
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-    fs.readFile(filePath, (readErr, content) => {
-      if (readErr) {
-        res.writeHead(500);
-        res.end('Server Error');
-      } else {
-        res.writeHead(200, {
-          'Content-Type': contentType,
-          'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000',
-        });
-        res.end(content);
-      }
-    });
+    let pathname;
+    try { pathname = decodeURIComponent((req.url ?? '/').split('?')[0]); }
+    catch { fail(400, 'Bad Request'); return; }
+    if (!pathname.startsWith('/') || /[\\:\0]/.test(pathname) || pathname.split('/').some(part => part === '..' || part === '.')) {
+      fail(403, 'Forbidden'); return;
+    }
+    if (!pathname.startsWith(base)) { fail(404, 'Not Found'); return; }
+    const relative = pathname.slice(base.length) || 'index.html';
+    const file = path.resolve(root, relative);
+    if (!contains(root, file)) { fail(403, 'Forbidden'); return; }
+    try {
+      const actual = await realpath(file);
+      if (!contains(root, actual)) { fail(403, 'Forbidden'); return; }
+      const info = await stat(actual);
+      if (!info.isFile()) { fail(404, 'Not Found'); return; }
+      const content = req.method === 'HEAD' ? null : await readFile(actual);
+      res.writeHead(200, {
+        'Content-Type': mime[path.extname(actual).toLowerCase()] ?? 'application/octet-stream',
+        'Content-Length': info.size,
+        'Cache-Control': /^assets\/[\w.-]+-[\w-]{8,}\.[\w]+$/.test(relative)
+          ? 'public, max-age=31536000, immutable' : 'no-cache',
+      });
+      res.end(content);
+    } catch (error) {
+      fail(['ENOENT', 'ENOTDIR'].includes(error.code) ? 404 : 500, error.code === 'ENOENT' ? 'Not Found' : 'Server Error');
+    }
   });
-});
+}
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🪐 Solar System Simulator server listening at http://localhost:${PORT}/`);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const port = Number(process.env.PORT ?? 5173);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT.');
+  const base = process.env.BASE_PATH ?? '/';
+  createStaticServer(new URL('./dist', import.meta.url), { base }).listen(port, '127.0.0.1', () => {
+    console.log('Local preview: http://127.0.0.1:' + port + base);
+  });
+}

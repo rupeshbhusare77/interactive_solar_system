@@ -1,19 +1,19 @@
-/**
- * 3D Solar System Simulator — Real NASA Moon Body Component
- * Features authentic Apollo/LRO photographic lunar imagery, crater relief bump mapping,
- * distinct Galilean moon textures, and irregular potato-shaped geometry for Phobos/Deimos.
- */
+import { SURFACE_MAPS } from '../../astronomy/generated/surfaceMaps';
+import { useSceneFrame } from './useSceneFrame';
+/** Celestial surface renderer with sourced shapes and explicitly reconstructed appearances. */
 
+import { shapeScale, bodyOrientation } from '../../astronomy/scienceCatalog';
+import { dateToJulianDate } from '../../astronomy/kepler';
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
 import { calculateMoonSpinAxis, getDaysSinceJ2000 } from '../../astronomy/kepler';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
 import { scaleRadius } from '../../astronomy/scaling';
 import { useSimulation } from '../../state/simulationContext';
-import { loadPlanetTexture } from '../../textures/textureLoader';
+import { loadPlanetTexture, restoreDataTextureRoles } from '../../textures/textureLoader';
 import { getCelestialBumpMap } from '../../textures/proceduralTextures';
 import { AtmosphereGlow } from './AtmosphereGlow';
 
@@ -31,6 +31,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
     selectBody,
     hoveredBodyId,
     setHoveredBodyId,
+    viewToggles,
   } = useSimulation();
 
   const moonGroupRef = useRef<THREE.Group>(null);
@@ -44,12 +45,13 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
   // Calibrated moon radius by ID
   const radius = scaleRadius(moon.physical.radiusKm, 'moon', scaleMode, moon.id);
 
-  // Dedicated texture per moon (Apollo photographic map for Moon, dedicated procedural map for Io, Europa, Ganymede, Titan, etc.)
+  // Load documented mission mosaics where available; other surfaces remain illustrative.
   const texture = useMemo(() => {
     return loadPlanetTexture(`${moon.id}.jpg`, moon.textureType);
   }, [moon.id, moon.textureType]);
 
   const bumpMap = useMemo(() => {
+    if(SURFACE_MAPS.some(map=>map.id===moon.id))return null;
     if (['moon', 'phobos', 'deimos', 'callisto', 'charon'].includes(moon.id)) {
       return getCelestialBumpMap('moon');
     }
@@ -64,14 +66,12 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
   const isParentSelected = selectedBodyId === moon.parentId;
 
   // Triaxial ellipsoid scaling for captured asteroid moons (Phobos & Deimos)
-  const geometryScale: [number, number, number] = useMemo(() => {
-    if (moon.id === 'phobos') return [1.45, 1.0, 0.8]; // Distinct irregular potato asteroid
-    if (moon.id === 'deimos') return [1.3, 1.0, 0.85];
-    return [1.0, 1.0, 1.0];
-  }, [moon.id]);
+  const geometryScale = useMemo(() => shapeScale(moon), [moon]);
+
+  const reticleRef = useRef<THREE.Group>(null);
 
   // Calculate current moon position relative to parent planet
-  useFrame(() => {
+  useSceneFrame(({ camera }) => {
     if (!moon.moonOrbitalElements || !moonGroupRef.current) return;
 
     const scaledOffset = getBodyPosition(moon.id,scaleMode)?.displayOffset;
@@ -79,15 +79,26 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
 
     moonGroupRef.current.position.set(scaledOffset.x, scaledOffset.y, scaledOffset.z);
 
-    // Synchronous or sidereal rotation
-    if (moonMeshRef.current && moon.physical.rotationPeriodHours) {
+    const orientation=bodyOrientation(moon,dateToJulianDate(getSimulationDate()));
+    if(orientation && moonMeshRef.current) {
+      const pole=new THREE.Vector3(orientation.pole.x,orientation.pole.y,orientation.pole.z);
+      const prime=new THREE.Vector3(orientation.prime.x,orientation.prime.y,orientation.prime.z);
+      moonMeshRef.current.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(prime,pole,prime.clone().cross(pole)));
+      moonMeshRef.current.rotateY(orientation.meridian);
+    }
+    // Legacy rotation is only used when no polynomial orientation exists.
+    if (!orientation && moon.id!=='hyperion' && moonMeshRef.current && moon.physical.rotationPeriodHours) {
       const rotSpeed = 24 / Math.abs(moon.physical.rotationPeriodHours);
       moonMeshRef.current.quaternion.copy(spinPole);
       moonMeshRef.current.rotateY(getDaysSinceJ2000(getSimulationDate()) * rotSpeed * Math.PI * 2);
     }
+
+    if (reticleRef.current) {
+      reticleRef.current.quaternion.copy(camera.quaternion);
+    }
   });
 
-  const showLabel = isSelected || isHovered || isParentSelected;
+  const showLabel = viewToggles.showLabels && (isSelected || isHovered || isParentSelected);
 
   return (
     <group ref={moonGroupRef}>
@@ -110,12 +121,13 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
       >
         <sphereGeometry args={[radius, 32, 32]} />
         <meshStandardMaterial
+          onUpdate={restoreDataTextureRoles}
           map={texture}
           color="#ffffff"
           bumpMap={bumpMap || undefined}
-          bumpScale={bumpMap ? 0.035 : 0}
-          roughness={moon.id === 'enceladus' ? 0.2 : 0.88}
-          metalness={0.04}
+          bumpScale={bumpMap ? radius * 0.004 : 0}
+          roughness={1}
+          metalness={0}
         />
       </mesh>
 
@@ -124,17 +136,24 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
         <AtmosphereGlow
           radius={radius}
           color={moon.atmosphereColor}
-          intensity={1.5}
-          power={2.0}
+          intensity={0.6}
+          power={3.2}
         />
       )}
 
-      {/* Selection indicator */}
+      {/* Camera-Facing Target HUD Indicator */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.35, radius * 1.45, 32]} />
-          <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} />
-        </mesh>
+        <group ref={reticleRef}>
+          <mesh>
+            <ringGeometry args={[radius * 1.3, radius * 1.34, 32]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.4}
+            />
+          </mesh>
+        </group>
       )}
 
       {/* Contextual Label */}
@@ -153,7 +172,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
                   : 'bg-black/85 text-zinc-300 border border-zinc-700/80 backdrop-blur-sm'
               }`}
             >
-              🌑 {moon.name}
+              {moon.name}
             </span>
           </div>
         </Html>

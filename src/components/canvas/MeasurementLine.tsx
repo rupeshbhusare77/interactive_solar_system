@@ -1,3 +1,4 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Real-Time Astronomical Measurement Line
  * Draws an interactive 3D laser vector between two celestial bodies with dynamic distance & light-time HUD.
@@ -5,7 +6,7 @@
 
 import React, { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
@@ -33,7 +34,9 @@ export const MeasurementLine: React.FC = () => {
       transparent: true,
       opacity: 0.85,
     });
-    return new THREE.Line(lineGeometry, mat);
+    const line = new THREE.Line(lineGeometry, mat);
+    line.frustumCulled = false;
+    return line;
   }, [lineGeometry]);
 
   useEffect(() => () => {
@@ -70,7 +73,7 @@ export const MeasurementLine: React.FC = () => {
 
   }, [originBody, targetBody, simulationDate, scaleMode, getBodyPosition]);
 
-  useFrame(() => {
+  useSceneFrame(() => {
     if (!originBody || !targetBody || originBody.id === targetBody.id) return;
 
     const positionA = getBodyPosition(originBody.id,scaleMode);

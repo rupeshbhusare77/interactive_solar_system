@@ -1,12 +1,11 @@
-/**
- * 3D Solar System Simulator — Photorealistic Planetary Renderer
- * Employs official high-resolution NASA/JPL photographic maps, elevation bump maps,
- * specular ocean reflectivity, dynamic cloud decks, night city lights, and Rayleigh atmospheric scattering.
- */
+import { useSceneFrame } from './useSceneFrame';
+/** Celestial surface renderer with sourced shapes and explicitly reconstructed appearances. */
 
+import { shapeScale, bodyOrientation } from '../../astronomy/scienceCatalog';
+import { dateToJulianDate } from '../../astronomy/kepler';
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
 import { scaleRadius, scaleRingSystem } from '../../astronomy/scaling';
@@ -16,8 +15,13 @@ import {
   loadPlanetTexture,
   loadPlanetBumpMap,
   loadRingTexture,
+  loadRingDensity,
+  loadEarthNormalMap,
+  loadEarthRoughnessMap,
+  restoreDataTextureRoles,
 } from '../../textures/textureLoader';
 import { AtmosphereGlow } from './AtmosphereGlow';
+import { MoonMarkers } from './MoonMarkers';
 import { MoonBody } from './MoonBody';
 import { PlanetaryRings, RingShadowOnPlanet } from './PlanetaryRings';
 import { EarthNightLights } from './EarthNightLights';
@@ -28,6 +32,7 @@ interface PlanetBodyProps {
 
 export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const {
+    getSimulationDate,
     getBodyEphemeris,
     getBodyPosition,
     scaleMode,
@@ -41,19 +46,21 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const planetGroupRef = useRef<THREE.Group>(null);
   const spinGroupRef = useRef<THREE.Group>(null);
   const surfaceMeshRef = useRef<THREE.Mesh>(null);
+  const surfaceSpinRef = useRef<THREE.Group>(null);
   const cloudsMeshRef = useRef<THREE.Mesh>(null);
+  const reticleRef = useRef<THREE.Group>(null);
 
   // Pass body.id so educational radius calibration is applied
   const radius = scaleRadius(body.physical.radiusKm, body.type, scaleMode, body.id);
 
-  // Load official high-res NASA maps with procedural fallback
+  // Load catalog surface maps with an explicitly illustrative fallback.
   const texture = useMemo(() => {
     return loadPlanetTexture(`${body.id}.jpg`, body.textureType);
   }, [body.id, body.textureType]);
 
   const bumpMap = useMemo(() => {
-    if (['earth', 'mars', 'mercury', 'venus', 'ceres', 'pluto'].includes(body.id)) {
-      const filename = body.id === 'earth' ? 'earth_normal.jpg' : `${body.id}_bump.jpg`;
+    if (['mars', 'mercury', 'venus', 'ceres', 'pluto'].includes(body.id)) {
+      const filename = `${body.id}_bump.jpg`;
       return loadPlanetBumpMap(filename, body.textureType);
     }
     return null;
@@ -61,10 +68,13 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
 
   const roughnessMap = useMemo(() => {
     if (body.id === 'earth') {
-      return loadPlanetTexture('earth_specular.jpg', 'earth');
+      return loadEarthRoughnessMap();
     }
     return null;
   }, [body.id]);
+
+  const normalMap = useMemo(() => body.id === 'earth' ? loadEarthNormalMap() : null, [body.id]);
+  const ringDensity = useMemo(() => body.rings ? loadRingDensity(body.id) : null, [body.id, body.rings]);
 
   const nightLightsTexture = useMemo(() => {
     if (body.id === 'earth') {
@@ -88,10 +98,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   }, [body.rings, body.id]);
 
   // Haumea's famous elongated rugby-ball shape due to 3.9-hour rapid spin
-  const geometryScale: [number, number, number] = useMemo(() => {
-    if (body.id === 'haumea') return [1.85, 1.0, 0.78];
-    return [1.0, 1.0, 1.0];
-  }, [body.id]);
+  const geometryScale = useMemo(() => shapeScale(body), [body]);
 
   // Child moons
   const childMoons = useMemo(() => {
@@ -102,7 +109,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const isHovered = hoveredBodyId === body.id;
 
   // Real-time orbital mechanics update
-  useFrame(() => {
+  useSceneFrame(({ camera }) => {
     if (!body.orbitalElements || !planetGroupRef.current) return;
 
     const ephemeris = getBodyEphemeris(body.id);
@@ -110,16 +117,27 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
     if (!ephemeris || !scaledPos) return;
     planetGroupRef.current.position.set(scaledPos.x, scaledPos.y, scaledPos.z);
 
-    // Spin planet around its axial tilt
-    if (surfaceMeshRef.current) {
+    const orientation=bodyOrientation(body,dateToJulianDate(getSimulationDate()));
+    if(orientation && spinGroupRef.current) {
+      const pole=new THREE.Vector3(orientation.pole.x,orientation.pole.y,orientation.pole.z);
+      const prime=new THREE.Vector3(orientation.prime.x,orientation.prime.y,orientation.prime.z);
+      spinGroupRef.current.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(prime,pole,prime.clone().cross(pole)));
+    }
+    // Spin planet around its sourced pole
+    if (surfaceSpinRef.current) {
       const rotRad = THREE.MathUtils.degToRad(ephemeris.rotationAngleDeg);
-      surfaceMeshRef.current.rotation.y = rotRad;
+      surfaceSpinRef.current.rotation.y = orientation ? orientation.meridian : rotRad;
     }
 
     // Spin Earth clouds slightly faster than terrain
     if (cloudsMeshRef.current) {
       const cloudSpeed = THREE.MathUtils.degToRad(ephemeris.rotationAngleDeg * 1.09);
       cloudsMeshRef.current.rotation.y = cloudSpeed;
+    }
+
+    // Align target HUD reticle perpendicular to camera sight line
+    if (reticleRef.current) {
+      reticleRef.current.quaternion.copy(camera.quaternion);
     }
   });
 
@@ -139,12 +157,14 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const axialTiltRad = THREE.MathUtils.degToRad(body.physical.axialTiltDeg);
 
   return (
-    <group ref={planetGroupRef}>
+    <group ref={planetGroupRef} name={body.id}>
       {/* Tilted along polar spin axis */}
       <group ref={spinGroupRef} rotation={[axialTiltRad, 0, 0]}>
+        {/* Terrain and night lights share one prime meridian and spin transform. */}
+        <group ref={surfaceSpinRef}>
         {/* Planet Surface Sphere */}
         <mesh
-          ref={surfaceMeshRef}
+          ref={surfaceMeshRef} name={`${body.id}-surface`}
           scale={geometryScale}
           onClick={(e) => {
             e.stopPropagation();
@@ -161,14 +181,18 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           }}
         >
           <sphereGeometry args={[radius, 64, 64]} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial
+            specularIntensity={body.id === 'earth' ? 0.3 : 1}
+            onUpdate={restoreDataTextureRoles}
             map={texture}
             color="#ffffff"
+            normalMap={normalMap || undefined}
+            normalScale={normalMap ? new THREE.Vector2(0.12, 0.12) : undefined}
             bumpMap={bumpMap || undefined}
-            bumpScale={bumpMap ? (body.id === 'earth' ? 0.05 : 0.04) : 0}
+            bumpScale={bumpMap ? radius * 0.006 : 0}
             roughnessMap={roughnessMap || undefined}
-            roughness={body.id === 'earth' ? 0.75 : 0.78}
-            metalness={0.04}
+            roughness={1}
+            metalness={0}
             emissive={new THREE.Color(0x000000)}
             emissiveIntensity={0}
           />
@@ -179,9 +203,9 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           <EarthNightLights
             radius={radius}
             nightTexture={nightLightsTexture}
-            spinGroupRef={spinGroupRef}
           />
         )}
+        </group>
 
         {/* Real-time Ring Shadow projected onto the planetary cloud deck */}
         {body.rings && ringsGeometryArgs && ringTexture && (
@@ -189,33 +213,37 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             innerRadius={ringsGeometryArgs.innerRadius}
             outerRadius={ringsGeometryArgs.outerRadius}
             planetVisualRadius={radius}
-            ringTexture={ringTexture}
+            ringDensity={ringDensity!}
             spinGroupRef={spinGroupRef}
+            geometryScale={geometryScale}
           />
         )}
 
         {/* Earth Atmospheric Cloud Deck */}
         {body.hasClouds && cloudsTexture && (
-          <mesh ref={cloudsMeshRef}>
-            <sphereGeometry args={[radius * 1.022, 64, 64]} />
+          <mesh ref={cloudsMeshRef} scale={geometryScale}>
+            <sphereGeometry args={[radius * 1.003, 64, 64]} />
             <meshStandardMaterial
               map={cloudsTexture}
               transparent
-              opacity={0.8}
+              opacity={0.78}
               blending={THREE.NormalBlending}
               depthWrite={false}
+              roughness={1.0}
             />
           </mesh>
         )}
 
         {/* Photorealistic Atmospheric Rayleigh Scattering Glow */}
         {body.hasAtmosphere && body.atmosphereColor && (
+          <group scale={geometryScale}>
           <AtmosphereGlow
             radius={radius}
             color={body.atmosphereColor}
-            intensity={body.id === 'earth' ? 1.4 : body.id === 'venus' ? 1.3 : 1.1}
-            power={body.id === 'earth' ? 2.5 : 2.2}
+            intensity={body.id === 'earth' ? 0.55 : body.id === 'venus' ? 0.65 : 0.35}
+            power={body.id === 'earth' ? 3.6 : 3.0}
           />
+          </group>
         )}
 
         {/* Photorealistic High-Fidelity Ring System with Planetary Shadow & Optical Scattering */}
@@ -226,16 +254,18 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             outerRadius={ringsGeometryArgs.outerRadius}
             planetVisualRadius={radius}
             ringTexture={ringTexture}
+            ringDensity={ringDensity!}
             opacity={body.rings.opacity}
-            ringColor={body.rings.color || '#ffffff'}
+            ringColor={body.id === 'saturn' ? '#ffffff' : body.rings.color || '#ffffff'}
             planetWorldGroupRef={planetGroupRef}
           />
         )}
       </group>
 
+      {viewToggles.showMoons && <MoonMarkers parentId={body.id} />}
       {/* Child Moons */}
       {viewToggles.showMoons &&
-        childMoons.map((moon) => (
+        childMoons.filter(moon=>moon.physical.radiusKm>=100 || selectedBodyId===moon.id).map((moon) => (
           <MoonBody
             key={moon.id}
             moon={moon}
@@ -243,21 +273,23 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           />
         ))}
 
-      {/* Selection Ring */}
+      {/* Camera-Facing Target HUD Indicator */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.35, radius * 1.45, 64]} />
-          <meshBasicMaterial
-            color="#38bdf8"
-            side={THREE.DoubleSide}
-            transparent
-            opacity={0.85}
-          />
-        </mesh>
+        <group ref={reticleRef}>
+          <mesh>
+            <ringGeometry args={[radius * 1.25, radius * 1.28, 64]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.35}
+            />
+          </mesh>
+        </group>
       )}
 
       {/* Contextual Planet Label */}
-      {(viewToggles.showLabels || isHovered || isSelected) && (
+      {viewToggles.showLabels && (
         <Html
           position={[0, radius + 1.2, 0]}
           center
@@ -266,13 +298,17 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         >
           <div className="flex flex-col items-center">
             <span
-              className={`px-2 py-0.5 rounded text-xs font-semibold tracking-wide transition-all shadow-lg ${
+              className={`px-2 py-0.5 rounded text-xs font-semibold tracking-wide transition-all shadow-lg flex items-center gap-1.5 ${
                 isSelected
                   ? 'bg-sky-500 text-black shadow-glow-cyan font-bold ring-1 ring-white'
                   : 'bg-black/80 text-white border border-white/20'
               }`}
             >
-              {body.name}
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: body.physical.color }}
+              />
+              <span>{body.name}</span>
             </span>
           </div>
         </Html>

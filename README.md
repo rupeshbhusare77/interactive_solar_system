@@ -2,6 +2,8 @@
 
 A browser-based 3D solar system simulator built with React, TypeScript, and Three.js. Explore celestial bodies, control simulation time, compare display scales, and inspect orbital and physical properties through an interactive space-themed interface.
 
+![Paused inner-system overview at October 3, 2026 UTC](docs/images/overview.png)
+
 ## Features
 
 - Explore the Sun, eight planets, five dwarf planets, 15 moons, and three comets.
@@ -22,7 +24,7 @@ A browser-based 3D solar system simulator built with React, TypeScript, and Thre
 | --- | --- |
 | Application | React 18, TypeScript |
 | 3D rendering | Three.js, React Three Fiber, Drei |
-| Styling | Tailwind CSS, PostCSS, Autoprefixer |
+| Styling | Tailwind CSS 4, PostCSS |
 | Icons | Lucide React |
 | Development and builds | Vite |
 
@@ -30,7 +32,7 @@ The application runs in the browser without a backend or database. Simulation st
 
 ## Getting started
 
-You need Node.js and npm, plus a browser with WebGL support. Node.js 24 was used for the project's initial build verification.
+You need Node.js 24 LTS and npm, plus a modern browser with WebGL 2. Use the version in .nvmrc. Styling requires Chrome 111+, Safari 16.4+, or Firefox 128+.
 
 ```bash
 git clone https://github.com/rupeshbhusare77/interactive_solar_system.git
@@ -98,7 +100,7 @@ serve.js                 Optional local server for the production build
 
 ## Verification
 
-Run `npm run build` to check TypeScript and production bundling. Browser verification is needed for visual and interaction changes. Automated test files and their runner were removed at the project owner's request.
+Run `npm run build` to check TypeScript and production bundling. Browser verification is needed for visual and interaction changes. A minimal regression suite was restored with the owner's approval for Stage 4. Run npm test for astronomy and static-server checks. Browser regressions run against a fixed UTC date, paused clock, and seeded generated assets.
 
 ## Scientific scope and known limitations
 
@@ -125,10 +127,65 @@ These comparisons were recorded during Stage 1 verification. The test fixtures a
 
 - Moon rendering, camera tracking, measurements, and information-panel distances use shared parent-relative positions. Their numerical consistency does not establish observed phase accuracy for illustrative satellite records.
 - Educational and hybrid scales deliberately change visual proportions and spacing. Numerical measurements use physical coordinates before display scaling.
-- The measurement line can remain visible when the measurement panel is closed.
-- Some texture-load failure paths replace cached textures without updating references already held by materials.
+- The measurement line mounts only while the measurement panel is open.
+- Missing texture maps recover in place with procedural or neutral replacements. Loading and fallback status are visible; failed graphics contexts offer a scene retry.
 - Stars, procedural textures, and belt particles use random generation, so their appearance can vary between sessions.
 
 ## Repository contents
 
 Keep application source, `public/` assets, configuration files, `package.json`, and `package-lock.json` in version control. The `.gitignore` excludes installed dependencies, generated builds, coverage, environment files, logs, personal editor settings, and the local project context file. Sanitized `.env.example` files can be tracked if environment configuration is introduced later.
+
+## First exploration
+
+Pause the timeline, search for Earth, and select Focus Camera. Switch between educational and real scale to compare visible proportions. Open Measure and choose Earth ⇄ Moon to inspect physical distance independently of display scale. Top View and Ecliptic expose an inner/outer/full region selector. On phones, camera and scale settings are in the settings drawer.
+
+## Release validation
+
+```bash
+npm ci
+npm run check
+npm audit --audit-level=high
+npx playwright install chromium
+npm run build -- --base=/interactive_solar_system/
+npm run test:browser
+```
+
+The screenshot above was captured from the production build at 1280 × 720, paused at October 3, 2026 UTC with seeded generated assets.
+
+The browser suite serves the production build under /interactive_solar_system/ and covers desktop/mobile keyboard search, lunar measurement, guide dismissal, camera regions, and failed-map recovery. CI runs the same checks and uploads dist as a reviewable artifact. Remote CI results require the owner's later push. If the browser download is unavailable, installed Edge can be used locally by setting PLAYWRIGHT_CHANNEL=msedge; CI uses Chromium.
+
+For a root-hosted site, use npm run build without --base. For another subfolder, pass its leading/trailing-slash path through --base. Texture URLs follow Vite's build base. The optional server accepts PORT and BASE_PATH environment variables and binds only to 127.0.0.1. It rejects traversal, sends real asset 404s, revalidates unhashed files, and caches hashed build assets immutably. It is a local preview, not a production hosting service.
+
+Hosting remains undecided. GitHub Pages is one option, but private repositories require a qualifying paid plan, and ordinary Pages sites can be publicly accessible even when source is private. No Pages settings or deployment were enabled. See [GitHub's Pages requirements](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site) before choosing that target.
+
+## Attribution and contribution
+
+[Asset provenance](docs/ASSET_SOURCES.md) lists the local texture files and their verified status. Original image authors, redistribution terms, and download URLs have not been recovered. Existing NASA wording in historical comments is not proof of provenance. Resolve those entries before a public release. No project license has been selected; do not assume permission to redistribute assets.
+
+For contributions, use Node.js 24, install with npm ci, keep changes focused, and run the release checks above. Include a paused UTC date and viewport dimensions when reporting visual defects. Preserve physical calculations separately from illustrative display scaling.
+
+Before release: confirm image redistribution rights, select a project license, choose hosting, review the build artifact, and run CI after the owner commits and pushes. Publish only after those owner decisions. No live-demo URL is claimed.
+
+## Sourced celestial systems
+
+The simulator includes 460 JPL mean-orbit satellite records across Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto. The independently imported discovery catalog lists 293 Saturn moons; 291 have records in the imported orbital table. Missing positions are not invented. Small moons appear as selectable navigation markers, whose point size does not represent a measured radius. Use the planet inspector's moon filter and **Explore Moon System** action to inspect an inner satellite system.
+
+Sixteen additional NASA-hosted mission-image mosaics replace procedural appearances for selected moons. NAIF planetary constants provide measured triaxial dimensions and polynomial pole/rotation models where available. Map coverage, color processing, longitude registration, satellite periodic orientation terms, and Hyperion's tumbling remain approximate or unknown. Existing legacy maps retain their separate provenance limitations.
+
+### Reference positions and accuracy
+
+Bundled JPL Horizons geometric vectors cover October 1–9, 2026 for 44 bodies. Files load from the site's own static assets; browsers never call JPL APIs. Cubic Hermite interpolation uses positions and velocities in J2000 ecliptic coordinates with UT timestamps. Independent withheld midpoint samples have measured errors below 5 km; this is an interpolation validation result, not a bound on observational uncertainty or every possible timestamp. Coverage ends at each body's actual last sample, which may precede October 9 slightly. Outside coverage, or if a file cannot load, the inspector explicitly identifies approximate fixed-element propagation. Daphnis has no available Horizons coverage for this interval.
+
+The inspector reports geometric illumination, parent eclipses at the moon's center, moon transits across the parent disk from Earth, and pair barycenter offsets. Calculations use physical coordinates and spherical radii, independent of display scaling. They do not predict event contact times or include refraction, light-time correction, or terrain. Reference planetary positions already contain the modeled barycentric motion; no second correction is added.
+
+Saturn's rendered D–F rings use circular boundary and gap dimensions from the [NASA PDS Ring-Moon Systems Node](https://pds-rings.seti.org/saturn/saturn_tables.html). Representative optical depths, neutral color, and scattering remain approximations. Faint outer rings and time-variable fine structure are omitted.
+
+### Refreshing the scientific assets
+
+These maintenance scripts use sequential requests and require network access:
+
+- `node scripts/refresh-science.mjs`: refresh JPL catalog and NAIF constants.
+- `node --experimental-strip-types scripts/refresh-ephemerides.mjs`: regenerate bounded reference vectors and withheld checkpoints.
+- `node scripts/refresh-surfaces.mjs`: refresh NASA-hosted moon maps and source hashes.
+
+Review generated data and run `npm run check`, `npm run build`, and `npm run test:browser` after refreshing. Catalogs can disagree in coverage and confirmation status; the UI reports discovery and orbital coverage separately. The current reference files total 0.89 MiB and load on demand.

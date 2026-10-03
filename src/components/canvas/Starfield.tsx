@@ -1,91 +1,32 @@
-/**
- * 3D Solar System Simulator — Deep Space Milky Way Galaxy & Starfield
- * Features real photographic Milky Way panorama celestial skybox and multi-temperature twinkling stars.
- */
-
-import React, { useMemo } from 'react';
+/** Photographic all-sky panorama. Credit: ESO/S. Brunier (CC BY 4.0). */
+import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { useSceneFrame } from './useSceneFrame';
 import { loadPlanetTexture } from '../../textures/textureLoader';
 
 export const Starfield: React.FC = () => {
-  const [positions, colors] = useMemo(() => {
-    const starCount = 3800;
-    const pos = new Float32Array(starCount * 3);
-    const col = new Float32Array(starCount * 3);
-
-    const starColors = [
-      new THREE.Color('#9bb0ff'), // Blue O/B
-      new THREE.Color('#bbccff'), // Light blue A
-      new THREE.Color('#f8f9ff'), // White F
-      new THREE.Color('#ffffed'), // Yellow-white G
-      new THREE.Color('#ffd2a1'), // Orange K
-      new THREE.Color('#ff8f8f'), // Red M
-    ];
-
-    for (let i = 0; i < starCount; i++) {
-      const u = Math.random();
-      const v = Math.random();
-      const theta = u * 2.0 * Math.PI;
-      const phi = Math.acos(2.0 * v - 1.0);
-      const r = 1800 + Math.random() * 800;
-
-      const sinPhi = Math.sin(phi);
-      pos[i * 3] = r * sinPhi * Math.cos(theta);
-      pos[i * 3 + 1] = r * Math.cos(phi);
-      pos[i * 3 + 2] = r * sinPhi * Math.sin(theta);
-
-      const chosenColor = starColors[Math.floor(Math.random() * starColors.length)];
-      const brightness = 0.4 + Math.random() * 0.6;
-      col[i * 3] = chosenColor.r * brightness;
-      col[i * 3 + 1] = chosenColor.g * brightness;
-      col[i * 3 + 2] = chosenColor.b * brightness;
-    }
-
-    return [pos, col];
-  }, []);
-
-  const galaxyTexture = useMemo(() => {
-    return loadPlanetTexture('milkyway.png', 'sun');
-  }, []);
+  const skyRef = useRef<THREE.Group>(null);
+  const galaxyTexture = useMemo(() => loadPlanetTexture('milkyway-eso.jpg', 'sun'), []);
+  useSceneFrame(({ camera }) => {
+    if (!skyRef.current) return;
+    skyRef.current.position.copy(camera.position);
+    skyRef.current.scale.setScalar(camera.far * 0.45 / 3200);
+  });
 
   return (
-    <group>
-      {/* Real NASA Milky Way Celestial Sphere Skybox */}
-      <mesh>
-        <sphereGeometry args={[3200, 64, 64]} />
+    <group ref={skyRef} name="background-sky">
+      {/* Static photographic backdrop; orientation is not an astrometric solution. */}
+      <mesh renderOrder={-1000} frustumCulled={false} rotation={[0, 0, Math.PI / 3]}>
+        <sphereGeometry args={[3200, 256, 128]} />
         <meshBasicMaterial
           map={galaxyTexture}
           side={THREE.BackSide}
-          transparent
-          opacity={0.65}
+          color={new THREE.Color(0.035, 0.035, 0.035)}
+          toneMapped={false}
           depthWrite={false}
+          depthTest={false}
         />
       </mesh>
-
-      {/* Sparkling Stellar Points */}
-      <points>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={positions.length / 3}
-            array={positions}
-            itemSize={3}
-          />
-          <bufferAttribute
-            attach="attributes-color"
-            count={colors.length / 3}
-            array={colors}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={1.6}
-          vertexColors
-          transparent
-          opacity={0.8}
-          sizeAttenuation={false}
-        />
-      </points>
     </group>
   );
 };

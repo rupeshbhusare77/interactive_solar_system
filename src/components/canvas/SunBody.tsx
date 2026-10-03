@@ -1,12 +1,9 @@
-/**
- * 3D Solar System Simulator — Real NASA Photosphere Sun Body Component
- * Features official NASA SDO solar imagery, pulsating corona prominences,
- * multi-layered volumetric solar glow, and omnidirectional solar light source.
- */
+import { useSceneFrame } from './useSceneFrame';
+/** Solar disk and a soft photographic-style halo; the glow is illustrative. */
 
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { SUN } from '../../astronomy/celestialData';
 import { scaleRadius } from '../../astronomy/scaling';
@@ -14,44 +11,27 @@ import { useSimulation } from '../../state/simulationContext';
 import { loadPlanetTexture } from '../../textures/textureLoader';
 
 export const SunBody: React.FC = () => {
-  const { scaleMode, selectedBodyId, selectBody, hoveredBodyId, setHoveredBodyId, viewToggles } =
+  const { scaleMode, selectedBodyId, selectBody, setHoveredBodyId, viewToggles, getSimulationDate } =
     useSimulation();
   const sunMeshRef = useRef<THREE.Mesh>(null);
-  const coronaMeshRef = useRef<THREE.Mesh>(null);
-  const outerGlowRef = useRef<THREE.Mesh>(null);
-  const flareGroupRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const reticleRef = useRef<THREE.Group>(null);
 
   const radius = scaleRadius(SUN.physical.radiusKm, 'star', scaleMode, 'sun');
-  // Real NASA Solar Dynamics Observatory Photosphere Map
+  // Legacy solar map; source status is recorded in ASSET_SOURCES.md.
   const texture = useMemo(() => loadPlanetTexture('sun.jpg', 'sun'), []);
 
+  const surfaceUniforms = useMemo(() => ({ surfaceMap: { value: texture } }), [texture]);
   const isSelected = selectedBodyId === 'sun';
-  const isHovered = hoveredBodyId === 'sun';
 
-  // Dynamic solar rotation and coronal pulsation
-  useFrame(({ clock }, delta) => {
-    const time = clock.getElapsedTime();
 
+  useSceneFrame(({ camera }) => {
     if (sunMeshRef.current) {
-      sunMeshRef.current.rotation.y += delta * 0.04;
+      // The visual map uses a single approximate equatorial rotation period.
+      sunMeshRef.current.rotation.y = (getSimulationDate().getTime() / 86400000 / 25.38 % 1) * Math.PI * 2;
     }
-
-    if (coronaMeshRef.current) {
-      coronaMeshRef.current.rotation.y -= delta * 0.02;
-      coronaMeshRef.current.rotation.z += delta * 0.015;
-      const pulse = 1.0 + Math.sin(time * 1.5) * 0.025;
-      coronaMeshRef.current.scale.set(pulse, pulse, pulse);
-    }
-
-    if (outerGlowRef.current) {
-      const outerPulse = 1.0 + Math.cos(time * 0.8) * 0.035;
-      outerGlowRef.current.scale.set(outerPulse, outerPulse, outerPulse);
-    }
-
-    if (flareGroupRef.current) {
-      flareGroupRef.current.rotation.y += delta * 0.06;
-      flareGroupRef.current.rotation.z += delta * 0.025;
-    }
+    glowRef.current?.quaternion.copy(camera.quaternion);
+    reticleRef.current?.quaternion.copy(camera.quaternion);
   });
 
   return (
@@ -59,12 +39,13 @@ export const SunBody: React.FC = () => {
       {/* Primary Solar Illuminator: Lights all planets & moons */}
       <pointLight
         position={[0, 0, 0]}
-        intensity={3.4}
+        intensity={viewToggles.showLighting ? 3 : 0}
         distance={0}
-        decay={0.08}
-        color="#fffbf0"
+        decay={0}
+        color="#ffffff"
       />
 
+      <group>
       {/* Photosphere Sphere */}
       <mesh
         ref={sunMeshRef}
@@ -82,102 +63,71 @@ export const SunBody: React.FC = () => {
           document.body.style.cursor = 'auto';
         }}
       >
-        <sphereGeometry args={[radius, 64, 64]} />
-        <meshBasicMaterial
-          map={texture}
-          color="#ffffff"
+        <sphereGeometry args={[radius, 96, 64]} />
+        <shaderMaterial
+          uniforms={surfaceUniforms}
+          vertexShader={`
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            void main() {
+              vUv = uv;
+              vNormal = normalMatrix * normal;
+              vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+              vViewPosition = -viewPosition.xyz;
+              gl_Position = projectionMatrix * viewPosition;
+            }`}
+          fragmentShader={`
+            uniform sampler2D surfaceMap;
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            void main() {
+              vec3 mapColor = texture2D(surfaceMap, vUv).rgb;
+              float detail = dot(mapColor, vec3(0.2126, 0.7152, 0.0722));
+              float mu = clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0);
+              // Approximate visible-light limb darkening, not a calibrated solar spectrum.
+              float limb = 0.4 + 0.6 * mu;
+              vec3 warmth = mix(vec3(1.0, 0.26, 0.035), vec3(1.0, 0.48, 0.09), sqrt(mu));
+              gl_FragColor = vec4(warmth * pow(detail, 1.65) * limb * 1.25, 1.0);
+              #include <tonemapping_fragment>
+              #include <colorspace_fragment>
+            }`}
         />
       </mesh>
 
-      {/* Dynamic Magnetic Solar Prominence Flare Arcs */}
-      <group ref={flareGroupRef}>
-        <group rotation={[0.4, 0.3, 0.2]}>
-          <mesh>
-            <torusGeometry args={[radius * 1.018, radius * 0.024, 16, 48, Math.PI * 0.55]} />
-            <meshBasicMaterial
-              color="#ef4444"
-              transparent
-              opacity={0.7}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        </group>
-        <group rotation={[-0.5, 0.9, -0.4]}>
-          <mesh>
-            <torusGeometry args={[radius * 1.025, radius * 0.02, 16, 48, Math.PI * 0.45]} />
-            <meshBasicMaterial
-              color="#f97316"
-              transparent
-              opacity={0.65}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        </group>
-        <group rotation={[0.8, -0.6, 0.7]}>
-          <mesh>
-            <torusGeometry args={[radius * 1.02, radius * 0.018, 16, 48, Math.PI * 0.35]} />
-            <meshBasicMaterial
-              color="#fbbf24"
-              transparent
-              opacity={0.6}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-            />
-          </mesh>
-        </group>
-      </group>
-
-      {/* Corona Inner Flare Mesh */}
-      <mesh ref={coronaMeshRef}>
-        <sphereGeometry args={[radius * 1.14, 48, 48]} />
-        <meshBasicMaterial
-          color="#fbbf24"
-          transparent
-          opacity={0.38}
-          side={THREE.BackSide}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
+      {/* A continuous radial falloff avoids visible concentric shell boundaries. */}
+      <mesh ref={glowRef} scale={[radius * 5, radius * 5, 1]} raycast={() => {}}>
+        <planeGeometry args={[1, 1]} />
+        <shaderMaterial
+          transparent depthWrite={false} blending={THREE.AdditiveBlending}
+          vertexShader={`varying vec2 vUv;
+            void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`}
+          fragmentShader={`varying vec2 vUv;
+            void main(){
+              float r=length(vUv-0.5)*2.0;
+              float outside=max(0.0,r-0.4);
+              float halo=(0.18*exp(-outside*26.0)+0.035*exp(-outside*7.0))
+                *(1.0-smoothstep(0.6,1.0,r))*smoothstep(0.38,0.405,r);
+              gl_FragColor=vec4(1.0,0.88,0.65,halo);
+              #include <tonemapping_fragment>
+              #include <colorspace_fragment>
+            }`}
         />
       </mesh>
 
-      {/* Corona Mid Solar Prominences */}
-      <mesh ref={outerGlowRef}>
-        <sphereGeometry args={[radius * 1.35, 48, 48]} />
-        <meshBasicMaterial
-          color="#f59e0b"
-          transparent
-          opacity={0.2}
-          side={THREE.BackSide}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Outer Volumetric Atmosphere Haze */}
-      <mesh>
-        <sphereGeometry args={[radius * 1.6, 32, 32]} />
-        <meshBasicMaterial
-          color="#d97706"
-          transparent
-          opacity={0.09}
-          side={THREE.BackSide}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Selection Halo Ring */}
+      {/* Camera-Facing Target Halo */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.45, radius * 1.5, 64]} />
-          <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.85} />
-        </mesh>
+        <group ref={reticleRef}>
+          <mesh>
+            <ringGeometry args={[radius * 1.35, radius * 1.356, 128]} />
+            <meshBasicMaterial color="#fbbf24" side={THREE.DoubleSide} transparent opacity={0.3} />
+          </mesh>
+        </group>
       )}
 
       {/* Label / Billboard */}
-      {(viewToggles.showLabels || isHovered || isSelected) && (
+      {viewToggles.showLabels && (
         <Html
           position={[0, radius + 1.8, 0]}
           center
@@ -192,11 +142,12 @@ export const SunBody: React.FC = () => {
                   : 'bg-black/80 text-amber-300 border border-amber-500/50 backdrop-blur-sm'
               }`}
             >
-              ☀️ Sun
+              Sun
             </span>
           </div>
         </Html>
       )}
+      </group>
     </group>
   );
 };

@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 @layer base {
   *, ::before, ::after {
@@ -84,58 +83,246 @@
 }
 
 /* Scene labels sit below every control surface. Panels and dialogs remain selectable. */
-:root { --header-height: 80px; --timeline-height: 80px; }
-html, body, #root { width: 100%; height: 100%; user-select: auto; -webkit-user-select: auto; }
+:root {
+  --header-height: 56px;
+  --timeline-height: 80px;
+  --dock-width: 10rem;
+}
+html, body, #root { width: 100%; height: 100%; user-select: auto; -webkit-user-select: auto; overflow: hidden; }
 button, summary, select { touch-action: manipulation; }
 button, input, select, summary, a { min-width: 0; }
 button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, [tabindex]:focus-visible {
   outline: 2px solid #38bdf8; outline-offset: 3px;
 }
-.app-header { position: absolute; inset: 0 0 auto; z-index: 40; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .6rem .8rem; }
-.header-brand { flex: 0 1 auto; min-width: 0; }
-.header-controls { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
-.header-search { flex: 1 1 12rem; min-width: 0; max-width: 22rem; }
-.header-select { display: flex; align-items: center; gap: .25rem; font-size: .75rem; min-width: 0; }
-.header-select select { max-width: 10rem; }
-.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
-.info-panel { position: absolute; right: .75rem; top: calc(var(--header-height) + .5rem); bottom: calc(var(--timeline-height) + 1.25rem); width: min(24rem, calc(100% - 1.5rem)); z-index: 20; }
-.panel-expand { display: none; }
-.measurement-panel { position: absolute; top: calc(var(--header-height) + .5rem); left: .75rem; z-index: 20; width: min(20rem, calc(100% - 1.5rem)); max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem); overflow-y: auto; }
-.timeline-panel { position: absolute; bottom: .5rem; left: 50%; transform: translateX(-50%); width: min(56rem, calc(100% - 1rem)); z-index: 30; }
-.timeline-details > summary { width: max-content; }
-.timeline-disclosure { position: relative; }
-.timeline-popover { position: absolute; bottom: calc(100% + .5rem); right: 0; z-index: 2; width: min(20rem, calc(100vw - 2rem)); max-height: min(55dvh, 24rem); overflow: auto; }
-.quick-dock { position: absolute; left: .75rem; top: calc(var(--header-height) + .75rem); bottom: calc(var(--timeline-height) + 1rem); z-index: 10; display: flex; flex-direction: column; gap: .25rem; overflow: auto; }
+.app-header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .5rem .8rem;
+  min-height: var(--header-height);
+}
+.header-brand { flex: 0 0 auto; min-width: 0; }
+.header-controls { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: .5rem; min-width: 0; }
+.header-search { flex: 0 1 20rem; min-width: 8rem; }
+.header-actions { flex: 0 0 auto; display: flex; align-items: center; gap: .35rem; }
+
+/* Desktop side and overlay panels */
+.quick-dock {
+  position: absolute;
+  left: .75rem;
+  top: calc(var(--header-height) + .75rem);
+  bottom: calc(var(--timeline-height) + 1rem);
+  width: var(--dock-width, 10rem);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  overflow: hidden;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .quick-dock button { flex-shrink: 0; }
 
+.radar-panel {
+  display: flex;
+  position: absolute;
+  left: calc(var(--dock-width, 10rem) + 1.25rem);
+  bottom: calc(var(--timeline-height) + 1rem);
+  z-index: 20;
+  transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-.radar-panel { display: flex; position: absolute; left: 7.75rem; bottom: calc(var(--timeline-height) + 1.25rem); z-index: 10; }
-.help-dialog { border: 0; padding: 0; background: transparent; color: white; width: min(42rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; }
+.measurement-panel {
+  position: absolute;
+  top: calc(var(--header-height) + .75rem);
+  left: calc(var(--dock-width, 10rem) + 1.25rem);
+  z-index: 20;
+  width: min(22rem, calc(100% - 1.5rem));
+  max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem);
+  overflow-y: auto;
+  transition: left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.info-panel {
+  position: absolute;
+  right: .75rem;
+  top: calc(var(--header-height) + .75rem);
+  bottom: calc(var(--timeline-height) + 1rem);
+  width: min(24rem, calc(100% - 1.5rem));
+  z-index: 20;
+}
+.panel-expand { display: none; }
+
+.timeline-panel {
+  position: absolute;
+  bottom: .5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(56rem, calc(100% - 1rem));
+  z-index: 30;
+}
+.timeline-details > summary { width: max-content; }
+.timeline-disclosure { position: relative; }
+.timeline-popover {
+  position: absolute;
+  bottom: calc(100% + .5rem);
+  right: 0;
+  z-index: 2;
+  width: min(20rem, calc(100vw - 2rem));
+  max-height: min(55dvh, 24rem);
+  overflow: auto;
+}
+
+.help-dialog {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: white;
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+}
 .help-dialog::backdrop { background: rgba(0,0,0,.8); backdrop-filter: blur(8px); }
+
+/* Tablet & Moderate Screen Adaptations (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  :root { --dock-width: 3.25rem; }
+  .info-panel { width: min(20rem, 36vw); }
+}
+
+/* Mobile Screens (< 768px) */
 @media (max-width: 767px) {
-  .header-brand { flex: 1 0 auto; }
-  .header-controls { flex-basis: 100%; }
-  .header-search { flex-basis: 100%; max-width: none; }
-  .header-select { flex: 1 1 8rem; }
-  .header-select select { flex: 1; max-width: 100%; }
-  .header-actions { flex: 1 1 auto; }
-  .info-panel { top: auto; left: .5rem; right: .5rem; bottom: calc(var(--timeline-height) + 1rem); width: auto; max-height: min(42dvh, calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem)); }
-  .info-panel[data-expanded="false"] .panel-body { display: none; }
-  .panel-expand { display: inline-flex; }
-  .measurement-panel { left: .5rem; width: calc(100% - 1rem); max-height: min(35dvh, calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem)); }
-  .quick-dock, .radar-panel { display: none; }
+  :root {
+    --header-height: 52px;
+    --timeline-height: 72px;
+  }
+  .app-header {
+    padding: .4rem .6rem;
+    flex-wrap: wrap;
+  }
+  .header-brand {
+    order: 1;
+  }
+  .header-actions {
+    order: 2;
+    margin-left: auto;
+  }
+  .header-controls {
+    order: 3;
+    flex-basis: 100%;
+    margin-top: .25rem;
+  }
+  .header-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  /* Quick Dock: Bottom horizontal touch strip above timeline */
+  .quick-dock {
+    position: absolute;
+    left: .5rem;
+    right: .5rem;
+    top: auto;
+    bottom: calc(var(--timeline-height) + .5rem);
+    width: auto;
+    height: auto;
+    max-height: 3rem;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: .25rem .5rem;
+    border-radius: 9999px;
+    z-index: 25;
+  }
+  .quick-dock .dock-body-list {
+    flex-direction: row;
+    align-items: center;
+    gap: .35rem;
+  }
+  .quick-dock .dock-category-tabs,
+  .quick-dock .dock-header {
+    display: none;
+  }
+
+  /* Info Panel: Mobile bottom sheet */
+  .info-panel {
+    top: auto;
+    left: .5rem;
+    right: .5rem;
+    bottom: calc(var(--timeline-height) + .5rem);
+    width: auto;
+    max-height: min(72dvh, calc(100dvh - var(--header-height) - var(--timeline-height) - 1rem));
+    z-index: 30;
+  }
+  .info-panel[data-expanded="false"] .panel-body {
+    display: none;
+  }
+  .panel-expand {
+    display: inline-flex;
+  }
+
+  /* Measurement Panel on Mobile */
+  .measurement-panel {
+    left: .5rem;
+    right: .5rem;
+    width: auto;
+    top: calc(var(--header-height) + 2.75rem);
+    max-height: min(50dvh, 320px);
+    z-index: 35;
+  }
+
+  /* Radar Scope on Mobile: Floating modal toggled by trigger button */
+  .radar-panel {
+    display: none;
+    position: fixed;
+    left: .75rem;
+    bottom: calc(var(--timeline-height) + 3.75rem);
+    z-index: 45;
+  }
+  .radar-panel.mobile-radar-active {
+    display: flex;
+  }
+
   .timeline-main { justify-content: flex-start; }
   .timeline-main time { flex-basis: 100%; }
   .timeline-popover { position: fixed; left: .5rem; right: .5rem; bottom: calc(100% + .5rem); width: auto; }
 }
-@media (max-height: 500px) {
-  .quick-dock, .radar-panel { display: none; }
 
-  .info-panel { max-height: 35dvh; top: auto; }
-  .info-panel[data-expanded="false"] .panel-body { display: none; }
-  .panel-expand { display: inline-flex; }
-
+/* Landscape Phones & Shorter Displays */
+@media (max-height: 520px) {
+  :root {
+    --header-height: 44px;
+    --timeline-height: 56px;
+    --dock-width: 3.25rem;
+  }
+  .quick-dock {
+    top: calc(var(--header-height) + .25rem);
+    bottom: calc(var(--timeline-height) + .25rem);
+  }
+  .radar-panel {
+    display: none;
+  }
+  .radar-panel.mobile-radar-active {
+    display: flex;
+  }
+  .info-panel {
+    max-height: calc(100dvh - var(--header-height) - .5rem);
+    top: calc(var(--header-height) + .25rem);
+    bottom: .5rem;
+    width: min(20rem, 45vw);
+  }
+  .info-panel[data-expanded="false"] .panel-body {
+    display: none;
+  }
+  .panel-expand {
+    display: inline-flex;
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
