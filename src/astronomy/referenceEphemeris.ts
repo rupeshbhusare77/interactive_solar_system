@@ -3,10 +3,16 @@ import { Vector3D } from './types';
 export interface ReferenceData { id:string; parent:string|null; samples:number[][]; validation:{maxErrorKm:number;checks:number} }
 const records=new Map<string,ReferenceData>();
 const requested=new Set<string>();
+const listeners = new Set<() => void>();
+export function subscribeReferenceChanges(listener: () => void) {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
 export let referenceRevision=0;
 export function installReference(data:ReferenceData) {
   if(data.samples.length<2 || data.samples.some((row,i)=>row.length!==7 || row.some(v=>!Number.isFinite(v)) || (i>0 && row[0]<=data.samples[i-1][0]))) throw new Error('Invalid reference samples');
   records.set(data.id,data); referenceRevision++;
+  listeners.forEach(listener => listener());
 }
 export function referenceStatus(id:string,date:Date) {
   const data=records.get(id), jd=date.getTime()/86400000+2440587.5;
