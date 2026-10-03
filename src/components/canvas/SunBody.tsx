@@ -20,6 +20,7 @@ export const SunBody: React.FC = () => {
   const coronaMeshRef = useRef<THREE.Mesh>(null);
   const outerGlowRef = useRef<THREE.Mesh>(null);
   const flareGroupRef = useRef<THREE.Group>(null);
+  const reticleRef = useRef<THREE.Group>(null);
 
   const radius = scaleRadius(SUN.physical.radiusKm, 'star', scaleMode, 'sun');
   // Real NASA Solar Dynamics Observatory Photosphere Map
@@ -29,7 +30,7 @@ export const SunBody: React.FC = () => {
   const isHovered = hoveredBodyId === 'sun';
 
   // Dynamic solar rotation and coronal pulsation
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock, camera }, delta) => {
     const time = clock.getElapsedTime();
 
     if (sunMeshRef.current) {
@@ -52,6 +53,10 @@ export const SunBody: React.FC = () => {
       flareGroupRef.current.rotation.y += delta * 0.06;
       flareGroupRef.current.rotation.z += delta * 0.025;
     }
+
+    if (reticleRef.current) {
+      reticleRef.current.quaternion.copy(camera.quaternion);
+    }
   });
 
   return (
@@ -59,9 +64,9 @@ export const SunBody: React.FC = () => {
       {/* Primary Solar Illuminator: Lights all planets & moons */}
       <pointLight
         position={[0, 0, 0]}
-        intensity={3.4}
+        intensity={3.2}
         distance={0}
-        decay={0.08}
+        decay={0}
         color="#fffbf0"
       />
 
@@ -168,12 +173,14 @@ export const SunBody: React.FC = () => {
         />
       </mesh>
 
-      {/* Selection Halo Ring */}
+      {/* Camera-Facing Target Halo */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.45, radius * 1.5, 64]} />
-          <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.85} />
-        </mesh>
+        <group ref={reticleRef}>
+          <mesh>
+            <ringGeometry args={[radius * 1.35, radius * 1.38, 64]} />
+            <meshBasicMaterial color="#fbbf24" side={THREE.DoubleSide} transparent opacity={0.4} />
+          </mesh>
+        </group>
       )}
 
       {/* Label / Billboard */}
