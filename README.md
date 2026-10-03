@@ -165,3 +165,27 @@ Hosting remains undecided. GitHub Pages is one option, but private repositories 
 For contributions, use Node.js 24, install with npm ci, keep changes focused, and run the release checks above. Include a paused UTC date and viewport dimensions when reporting visual defects. Preserve physical calculations separately from illustrative display scaling.
 
 Before release: confirm image redistribution rights, select a project license, choose hosting, review the build artifact, and run CI after the owner commits and pushes. Publish only after those owner decisions. No live-demo URL is claimed.
+
+## Sourced celestial systems
+
+The simulator includes 460 JPL mean-orbit satellite records across Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto. The independently imported discovery catalog lists 293 Saturn moons; 291 have records in the imported orbital table. Missing positions are not invented. Small moons appear as selectable navigation markers, whose point size does not represent a measured radius. Use the planet inspector's moon filter and **Explore Moon System** action to inspect an inner satellite system.
+
+Sixteen additional NASA-hosted mission-image mosaics replace procedural appearances for selected moons. NAIF planetary constants provide measured triaxial dimensions and polynomial pole/rotation models where available. Map coverage, color processing, longitude registration, satellite periodic orientation terms, and Hyperion's tumbling remain approximate or unknown. Existing legacy maps retain their separate provenance limitations.
+
+### Reference positions and accuracy
+
+Bundled JPL Horizons geometric vectors cover October 1–9, 2026 for 44 bodies. Files load from the site's own static assets; browsers never call JPL APIs. Cubic Hermite interpolation uses positions and velocities in J2000 ecliptic coordinates with UT timestamps. Independent withheld midpoint samples have measured errors below 5 km; this is an interpolation validation result, not a bound on observational uncertainty or every possible timestamp. Coverage ends at each body's actual last sample, which may precede October 9 slightly. Outside coverage, or if a file cannot load, the inspector explicitly identifies approximate fixed-element propagation. Daphnis has no available Horizons coverage for this interval.
+
+The inspector reports geometric illumination, parent eclipses at the moon's center, moon transits across the parent disk from Earth, and pair barycenter offsets. Calculations use physical coordinates and spherical radii, independent of display scaling. They do not predict event contact times or include refraction, light-time correction, or terrain. Reference planetary positions already contain the modeled barycentric motion; no second correction is added.
+
+Saturn's rendered D–F rings use circular boundary and gap dimensions from the [NASA PDS Ring-Moon Systems Node](https://pds-rings.seti.org/saturn/saturn_tables.html). Representative optical depths, neutral color, and scattering remain approximations. Faint outer rings and time-variable fine structure are omitted.
+
+### Refreshing the scientific assets
+
+These maintenance scripts use sequential requests and require network access:
+
+- `node scripts/refresh-science.mjs`: refresh JPL catalog and NAIF constants.
+- `node --experimental-strip-types scripts/refresh-ephemerides.mjs`: regenerate bounded reference vectors and withheld checkpoints.
+- `node scripts/refresh-surfaces.mjs`: refresh NASA-hosted moon maps and source hashes.
+
+Review generated data and run `npm run check`, `npm run build`, and `npm run test:browser` after refreshing. Catalogs can disagree in coverage and confirmation status; the UI reports discovery and orbital coverage separately. The current reference files total 0.89 MiB and load on demand.

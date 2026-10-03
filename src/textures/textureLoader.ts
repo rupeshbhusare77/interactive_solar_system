@@ -1,3 +1,4 @@
+import { SURFACE_MAPS } from '../astronomy/generated/surfaceMaps';
 /**
  * Shared scene textures with explicit color/data roles and in-place failure recovery.
  */
@@ -18,9 +19,10 @@ let owners = 0;
 let disposalTimer: ReturnType<typeof setTimeout> | undefined;
 
 const LOCAL_TEXTURES = new Set([
+  ...SURFACE_MAPS.map(map=>map.id+'.jpg'),
   'earth.jpg', 'earth_clouds.png', 'earth_lights.png', 'earth_normal.jpg',
   'earth_specular.jpg', 'jupiter.jpg', 'mars.jpg', 'mars_bump.jpg',
-  'mercury.jpg', 'mercury_bump.jpg', 'milkyway.png', 'moon.jpg',
+  'mercury.jpg', 'mercury_bump.jpg', 'milkyway-eso.jpg', 'moon.jpg',
   'neptune.jpg', 'pluto.jpg', 'saturn.jpg', 'saturn_ring.jpg', 'sun.jpg',
   'uranus.jpg', 'venus.jpg', 'venus_bump.jpg',
 ]);
@@ -104,7 +106,7 @@ function loadTexture(
 
 export function loadPlanetTexture(filename: string, proceduralKey: string): THREE.Texture {
   return loadTexture(`color:${filename}`, filename, () => {
-    if (filename === 'milkyway.png' || filename === 'earth_lights.png') return flatTexture(0);
+    if (filename === 'milkyway-eso.jpg' || filename === 'earth_lights.png') return flatTexture(0);
     if (filename === 'earth_clouds.png') return flatTexture(255, 255, 255, 0);
     return getCelestialTexture(proceduralKey);
   }, true);
@@ -137,7 +139,7 @@ export function loadEarthRoughnessMap(): THREE.Texture {
 const ringProfile = (bodyId: string) => bodyId === 'uranus' ? getUranusRingTexture()
   : bodyId === 'haumea' ? getHaumeaRingTexture() : getSaturnRingTexture();
 export function loadRingTexture(bodyId: string): THREE.Texture {
-  return loadTexture(`ring-color:${bodyId}`, bodyId === 'saturn' ? 'saturn_ring.jpg' : null,
+  return loadTexture(`ring-color:${bodyId}`, null,
     () => ringProfile(bodyId), true, true);
 }
 export function loadRingDensity(bodyId: string): THREE.Texture {

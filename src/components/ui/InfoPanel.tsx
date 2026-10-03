@@ -23,6 +23,10 @@ import {
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP, MOONS } from '../../astronomy/celestialData';
 import { distanceBetween, dateToJulianDate } from '../../astronomy/kepler';
+import { JPL_CATALOG } from '../../astronomy/scienceCatalog';
+import { SURFACE_MAPS } from '../../astronomy/generated/surfaceMaps';
+import { referenceStatus } from '../../astronomy/referenceEphemeris';
+import { illuminatedFraction, diskOverlap, barycenter } from '../../astronomy/phenomena';
 import { KM_PER_AU, LIGHT_SECONDS_PER_AU } from '../../astronomy/constants';
 
 type InfoTab = 'overview' | 'telemetry' | 'physical' | 'orbital';
@@ -43,10 +47,13 @@ export const InfoPanel: React.FC = () => {
   } = useSimulation();
 
   const [activeTab, setActiveTab] = useState<InfoTab>('overview');
+  const [moonQuery,setMoonQuery]=useState('');
+  const [majorOnly,setMajorOnly]=useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     setIsExpanded(false);
+    setMoonQuery('');
     setActiveTab('overview');
   }, [selectedBodyId]);
 
@@ -97,6 +104,20 @@ export const InfoPanel: React.FC = () => {
   // Child moons for this planet
   const childMoons = MOONS.filter((m) => m.parentId === body.id);
 
+  const filteredMoons=childMoons.filter(moon=>(!majorOnly || moon.physical.radiusKm>=100) && moon.name.toLowerCase().includes(moonQuery.toLowerCase()));
+  const discoveryCount=JPL_CATALOG.discoveries.filter(record=>record.parent===body.id).length;
+  const missingMoons=JPL_CATALOG.discoveries.filter(record=>record.parent===body.id && !childMoons.some(moon=>moon.name.toLowerCase().replace(/[^a-z0-9]/g,'')===record.name.toLowerCase().replace(/[^a-z0-9]/g,'')));
+  const surface=SURFACE_MAPS.find(map=>map.id===body.id);
+  const position=getBodyPosition(body.id,'real',simulationDate)?.physicalAU;
+  const earth=getBodyPosition('earth','real',simulationDate)?.physicalAU;
+  const sun={x:0,y:0,z:0};
+  const phase=position && earth ? illuminatedFraction(position,sun,earth) : null;
+  const parent=body.parentId ? CELESTIAL_BODY_MAP.get(body.parentId) : undefined;
+  const parentPosition=parent ? getBodyPosition(parent.id,'real',simulationDate)?.physicalAU : undefined;
+  const eclipse=position && parentPosition && parent ? diskOverlap(position,sun,695700/KM_PER_AU,parentPosition,parent.physical.radiusKm/KM_PER_AU) : null;
+  const transit=earth && position && parentPosition && parent ? diskOverlap(earth,parentPosition,parent.physical.radiusKm/KM_PER_AU,position,body.physical.radiusKm/KM_PER_AU) : null;
+  const center=position && parentPosition && parent ? barycenter(parentPosition,parent.physical.massKg,position,body.physical.massKg) : null;
+  const format=(value:number,unit='',digits?:number)=>Number.isFinite(value) ? (digits===undefined?String(value):value.toFixed(digits))+unit : 'Unknown';
   // Perihelion and Aphelion if orbital elements present
   const perihelionAU = body.orbitalElements
     ? body.orbitalElements.a * (1 - body.orbitalElements.e)
@@ -107,17 +128,17 @@ export const InfoPanel: React.FC = () => {
 
   // Earth comparative ratios
   const earthRadiusKm = 6371.0;
-  const sizeRatioToEarth = (body.physical.radiusKm / earthRadiusKm).toFixed(2);
+  const sizeRatioToEarth = format(body.physical.radiusKm / earthRadiusKm,'',2);
   const earthGravity = 9.807;
-  const gravityRatioToEarth = (body.physical.gravityMs2 / earthGravity).toFixed(2);
-  const gravityBarPercent = Math.min(
+  const gravityRatioToEarth = format(body.physical.gravityMs2 / earthGravity,'',2);
+  const gravityBarPercent = Number.isFinite(body.physical.gravityMs2) ? Math.min(
     Math.max((body.physical.gravityMs2 / 28) * 100, 5),
     100
-  );
+  ) : 0;
 
   // Temperature gauge clamp between -250C and 500C
   const tempClamped = Math.min(Math.max(body.physical.meanTempC, -250), 500);
-  const tempGaugePercent = ((tempClamped - -250) / 750) * 100;
+  const tempGaugePercent = Number.isFinite(tempClamped) ? ((tempClamped + 250) / 750) * 100 : 0;
 
   return (
     <aside
@@ -221,6 +242,24 @@ export const InfoPanel: React.FC = () => {
           </button>
         </div>
 
+        <section aria-label="Scientific accuracy" className="rounded-lg border border-sky-500/30 p-2 text-[11px] space-y-1">
+          <p>{referenceStatus(body.id,simulationDate)}</p>
+          <p>{surface?.appearance ?? body.science?.appearance ?? 'Illustrative appearance.'}</p>
+          <p>Other legacy physical fields retain unverified provenance. Unknown measurements are not inferred.</p>
+          <p>Orientation uses polynomial IAU constants where available; periodic terms, libration, and texture registration remain approximate.</p>
+          {surface && <a className="underline text-sky-300" href={surface.source} target="_blank" rel="noreferrer">Surface map and credits</a>}
+          {body.id==='saturn' && <p>Circular D–F ring boundaries are sourced from <a className="underline text-sky-300" href="https://pds-rings.seti.org/saturn/saturn_tables.html" target="_blank" rel="noreferrer">NASA PDS</a>. Optical depth, color, and scattering remain approximations; faint outer rings are omitted.</p>}
+          {body.parentId && <p>Parent: {referenceStatus(body.parentId,simulationDate)}</p>}
+          {body.science && <a className="underline text-sky-300 block" href={body.science.physicalSource} target="_blank" rel="noreferrer">{body.type==='moon'?'Satellite physical data source':'Dimensions and orientation source'}</a>}
+        </section>
+        {body.type!=='star' && <section aria-label="Physical geometry" className="rounded-lg border border-zinc-700 p-2 text-[11px] space-y-1">
+          <p>Illumination from Earth: {phase===null?'Unavailable':(phase*100).toFixed(1)+'%'}</p>
+          {eclipse && <p>Sun blocked by parent at moon center: {eclipse}</p>}
+          {transit && <p>Moon over parent disk from Earth: {transit}</p>}
+          {center && parentPosition && <p>Pair barycenter offset from parent: {(distanceBetween(center,parentPosition)*KM_PER_AU).toFixed(1)} km</p>}
+          <p>Geometric spherical-body diagnostic at the selected time; no atmospheric refraction or light-time correction. Accuracy follows the position model.</p>
+        </section>}
+        {childMoons.length>0 && <button className="glass-button rounded px-2 py-1" onClick={()=>setCameraMode('system')}>Explore Moon System</button>}
         {/* ================= TAB 1: OVERVIEW ================= */}
         {activeTab === 'overview' && (
           <div className="space-y-3.5">
@@ -228,15 +267,15 @@ export const InfoPanel: React.FC = () => {
             <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
               <div className="p-2 rounded-lg bg-black/40 border border-zinc-800">
                 <span className="text-[10px] text-zinc-500 uppercase block">Radius vs Earth</span>
-                <span className="text-white font-bold text-xs">{sizeRatioToEarth}×</span>
+                <span className="text-white font-bold text-xs">{sizeRatioToEarth==='Unknown'?'Unknown':sizeRatioToEarth+'×'}</span>
               </div>
               <div className="p-2 rounded-lg bg-black/40 border border-zinc-800">
                 <span className="text-[10px] text-zinc-500 uppercase block">Gravity vs Earth</span>
-                <span className="text-sky-300 font-bold text-xs">{gravityRatioToEarth}g</span>
+                <span className="text-sky-300 font-bold text-xs">{gravityRatioToEarth==='Unknown'?'Unknown':gravityRatioToEarth+'g'}</span>
               </div>
               <div className="p-2 rounded-lg bg-black/40 border border-zinc-800">
                 <span className="text-[10px] text-zinc-500 uppercase block">Mean Temp</span>
-                <span className="text-amber-300 font-bold text-xs">{body.physical.meanTempC}°C</span>
+                <span className="text-amber-300 font-bold text-xs">{format(body.physical.meanTempC,'°C')}</span>
               </div>
             </div>
 
@@ -255,10 +294,13 @@ export const InfoPanel: React.FC = () => {
             {childMoons.length > 0 && (
               <div className="space-y-1.5 pt-1">
                 <h3 className="text-[11px] font-semibold uppercase text-zinc-400 tracking-wider">
-                  Major Natural Satellites ({childMoons.length})
+                  Natural Satellites ({discoveryCount || childMoons.length} cataloged; {childMoons.length} with orbital data)
                 </h3>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {childMoons.map((moon) => (
+                <input aria-label="Filter moons" placeholder="Filter moons…" value={moonQuery} onChange={event=>setMoonQuery(event.target.value)} className="w-full rounded bg-black/50 border border-zinc-700 px-2 py-1"/>
+                <label className="flex gap-2"><input type="checkbox" checked={majorOnly} onChange={event=>setMajorOnly(event.target.checked)}/>Only moons with measured mean radius ≥ 100 km</label>
+                <p className="text-zinc-400">JPL catalog verified {JPL_CATALOG.verifiedOn}. Small dots are navigation markers.</p>
+                <div className="grid grid-cols-2 gap-1.5 max-h-52 overflow-y-auto">
+                  {filteredMoons.map((moon) => (
                     <button
                       key={moon.id}
                       onClick={() => selectBody(moon.id)}
@@ -272,6 +314,7 @@ export const InfoPanel: React.FC = () => {
               </div>
             )}
 
+            {missingMoons.length>0 && <p className="text-zinc-400">Discovery records without bundled orbital data: {missingMoons.map(record=>record.name).join(', ')}. No position is invented.</p>}
             {/* Quick Measurement Actions */}
             <div className="pt-2 border-t border-zinc-800 flex gap-2">
               <button
@@ -339,7 +382,7 @@ export const InfoPanel: React.FC = () => {
                 {ephemeris && (
                   <>
                     <div>
-                      <span className="text-[10px] text-zinc-500 block">True Anomaly (ν)</span>
+                      <span className="text-[10px] text-zinc-500 block">Approximate model anomaly (ν)</span>
                       <span className="text-white font-semibold text-xs">
                         {ephemeris.trueAnomalyDeg.toFixed(1)}°
                       </span>
@@ -390,7 +433,7 @@ export const InfoPanel: React.FC = () => {
                   <Thermometer className="w-3.5 h-3.5 text-amber-400" /> Mean Surface Temperature
                 </span>
                 <span className="font-mono text-white font-bold">
-                  {body.physical.meanTempC}°C
+                  {format(body.physical.meanTempC,'°C')}
                 </span>
               </div>
               <div className="relative w-full h-2.5 rounded-full overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-400 via-emerald-400 via-amber-400 to-rose-600">
@@ -413,7 +456,7 @@ export const InfoPanel: React.FC = () => {
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-zinc-400 font-semibold">Surface Gravity</span>
                 <span className="font-mono text-white font-bold">
-                  {body.physical.gravityMs2} m/s² ({gravityRatioToEarth}g)
+                  {format(body.physical.gravityMs2,' m/s²')} ({gravityRatioToEarth}g)
                 </span>
               </div>
               <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
@@ -433,38 +476,38 @@ export const InfoPanel: React.FC = () => {
                 <div className="px-2.5 py-1.5 flex justify-between">
                   <span className="text-zinc-400">Mean Radius</span>
                   <span className="text-white font-medium">
-                    {body.physical.radiusKm.toLocaleString()} km
+                    {format(body.physical.radiusKm,' km')}
                   </span>
                 </div>
                 <div className="px-2.5 py-1.5 flex justify-between">
                   <span className="text-zinc-400">Mass</span>
                   <span className="text-white font-medium">
-                    {body.physical.massKg.toExponential(3)} kg
+                    {Number.isFinite(body.physical.massKg)?body.physical.massKg.toExponential(3)+' kg':'Unknown'}
                   </span>
                 </div>
                 <div className="px-2.5 py-1.5 flex justify-between">
                   <span className="text-zinc-400">Mean Density</span>
                   <span className="text-white font-medium">
-                    {body.physical.densityGcm3} g/cm³
+                    {format(body.physical.densityGcm3,' g/cm³')}
                   </span>
                 </div>
                 <div className="px-2.5 py-1.5 flex justify-between">
                   <span className="text-zinc-400">Escape Velocity</span>
                   <span className="text-white font-medium">
-                    {body.physical.escapeVelocityKms} km/s
+                    {format(body.physical.escapeVelocityKms,' km/s')}
                   </span>
                 </div>
                 <div className="px-2.5 py-1.5 flex justify-between">
                   <span className="text-zinc-400">Rotation Period</span>
                   <span className="text-white font-medium">
-                    {Math.abs(body.physical.rotationPeriodHours)} hrs
+                    {format(Math.abs(body.physical.rotationPeriodHours),' hrs')}
                     {retrogradeSpin ? ' (Retrograde)' : ''}
                   </span>
                 </div>
                 <div className="px-2.5 py-1.5 flex justify-between">
                   <span className="text-zinc-400">Axial Tilt</span>
                   <span className="text-white font-medium">
-                    {body.physical.axialTiltDeg}°
+                    {format(body.physical.axialTiltDeg,'°')}
                   </span>
                 </div>
               </div>
@@ -537,16 +580,15 @@ export const InfoPanel: React.FC = () => {
             <section className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5 text-[11px] text-zinc-300">
               <h3 className="font-semibold text-amber-300">Model and accuracy</h3>
               <p>
-                Educational approximation. UTC timestamps approximate dynamical time;
-                perturbations and precise surface orientation are omitted.
+                Reference interpolation is used within bundled coverage after loading. Outside it, fixed-element propagation is approximate; the model does not predict event times.
               </p>
               {orbit ? (
                 <>
                   <p>
                     Epoch: JD {orbit.epochJD ?? 'unavailable'} · Plane:{' '}
                     {orbit.referencePlane === 'parent-equator'
-                      ? 'parent equator (static illustrative pole)'
-                      : 'J2000 ecliptic'}
+                      ? 'parent equator'
+                      : orbit.referencePlane === 'laplace' ? 'local Laplace plane (sourced pole)' : 'J2000 ecliptic'}
                   </p>
                   <p>
                     Provenance: {orbit.provenance?.status ?? 'unverified'}.{' '}

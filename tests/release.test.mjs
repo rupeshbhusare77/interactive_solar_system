@@ -87,3 +87,70 @@ test('static server rejects traversal, preserves 404s, and caches only hashed as
     await rm(root, { recursive: true, force: true });
   }
 });
+
+const { validateCatalog, MOONS } = await import('../src/astronomy/celestialData.ts');
+const { JPL_CATALOG, bodyOrientation, shapeScale } = await import('../src/astronomy/scienceCatalog.ts');
+const { installReference, referenceState } = await import('../src/astronomy/referenceEphemeris.ts');
+const { illuminatedFraction, diskOverlap, barycenter } = await import('../src/astronomy/phenomena.ts');
+const { readFile } = await import('node:fs/promises');
+const { calculateMoonSpinAxis } = await import('../src/astronomy/kepler.ts');
+const { SURFACE_MAPS } = await import('../src/astronomy/generated/surfaceMaps.ts');
+const { saturnRingOpacity } = await import('../src/astronomy/rings.ts');
+test('sourced catalog, physical geometry, and withheld JPL reference checkpoints', async () => {
+  assert.deepEqual(validateCatalog(CELESTIAL_BODIES), []);
+  for(const map of SURFACE_MAPS)assert(decodeURIComponent(map.download.split('/').pop()).toLowerCase().includes(map.id), map.id+': surface belongs to another body');
+  assert.equal(JPL_CATALOG.discoveries.filter(row => row.parent === 'saturn').length, 293);
+  assert.equal(MOONS.filter(body => body.parentId === 'saturn').length, 291);
+  assert.equal(MOONS.filter(body => body.parentId === 'pluto').length, 5);
+  assert(MOONS.some(body => body.id === 'rhea'));
+  for (const body of MOONS) assert(Number.isFinite(body.moonOrbitalElements.epochJD));
+  const saturn = CELESTIAL_BODIES.find(body => body.id === 'saturn');
+  for(const mode of ['educational','hybrid']) {
+    const moon=MOONS.find(body=>body.id==='mimas');
+    const offset=resolveBodyPosition(moon.id,new Date('2026-10-03T00:00:00Z'),mode).displayOffset;
+    assert(Math.hypot(offset.x,offset.y,offset.z)>bodyViewRadius(saturn,mode)+bodyViewRadius(moon,mode),'Outer moons must not intersect enlarged rings');
+  }
+  assert(shapeScale(saturn)[1] < shapeScale(saturn)[0]);
+  const uranus=CELESTIAL_BODIES.find(body=>body.id==='uranus');
+  const titania=MOONS.find(body=>body.id==='titania');
+  const orbitPole=calculateMoonSpinAxis({...titania.moonOrbitalElements,i:0},uranus.physical.axialTiltDeg);
+  const parentPole=bodyOrientation(uranus,2451545).pole;
+  assert(Math.hypot(orbitPole.x-parentPole.x,orbitPole.y-parentPole.y,orbitPole.z-parentPole.z)<1e-6,'Equatorial orbit must use the sourced parent pole');
+  const pole = bodyOrientation(saturn, 2451545).pole;
+  assert(Math.abs(Math.hypot(pole.x,pole.y,pole.z)-1) < 1e-12);
+  assert.equal(saturnRingOpacity(133500),0);
+  assert.equal(saturnRingOpacity(136500),0);
+  assert(saturnRingOpacity(100000)>saturnRingOpacity(120000));
+  assert.equal(bodyOrientation(MOONS.find(body=>body.id==='hyperion'),2451545),null);
+  const origin={x:0,y:0,z:0},sun={x:10,y:0,z:0},body={x:1,y:0,z:0};
+  assert.equal(illuminatedFraction(body,sun,origin),0);
+  assert.equal(illuminatedFraction(body,sun,{x:2,y:0,z:0}),1);
+  assert.equal(diskOverlap(origin,sun,1,body,0.2),'total');
+  assert.equal(diskOverlap(origin,sun,1,body,0.02),'annular');
+  assert.equal(diskOverlap(origin,sun,1,{x:1,y:3,z:0},0.2),'none');
+  assert.equal(diskOverlap(origin,sun,1,{x:20,y:0,z:0},2),'none');
+  assert.deepEqual(barycenter(origin,3,{x:4,y:0,z:0},1),{x:1,y:0,z:0});
+  assert.equal(barycenter(origin,NaN,body,1),null);
+  const manifest=JSON.parse(await readFile(new URL('../public/science/manifest.json',import.meta.url),'utf8'));
+  for(const record of manifest.bodies) {
+    const data=JSON.parse(await readFile(new URL('../public/science/'+record.id+'.json',import.meta.url),'utf8'));
+    installReference(data);
+    for(const checkpoint of data.validation.checkpoints) {
+      const time=new Date((checkpoint[0]-2440587.5)*86400000);
+      const actual=referenceState(record.id,time).position;
+      const expected={x:checkpoint[1],y:checkpoint[3],z:-checkpoint[2]};
+      assert(distanceBetween(actual,expected)*149597870.7 <= 5, `${record.id}: reference interpolation drift`);
+    }
+    assert.equal(referenceState(record.id,new Date('2025-01-01')),null);
+  }
+  const date=new Date('2026-10-03T00:00:00Z');
+  for(const mode of ['educational','hybrid','real'])assert.deepEqual(resolveBodyPosition('titan',date,mode).physicalAU,resolveBodyPosition('titan',date,'real').physicalAU);
+});
+
+
+const { nearestProjectedMarker } = await import('../src/astronomy/markerPicking.ts');
+test('small moon selection uses pixel distance rather than world-scale radius',()=>{
+  assert.equal(nearestProjectedMarker([100,100,1,200,200,1],200,200),1);
+  assert.equal(nearestProjectedMarker([100,100,1,200,200,1],150,150),null);
+  assert.equal(nearestProjectedMarker([198,200,1,200,200,1],200,200),1);
+});

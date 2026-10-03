@@ -1,10 +1,8 @@
 import { useSceneFrame } from './useSceneFrame';
-/**
- * 3D Solar System Simulator — Photorealistic Planetary Renderer
- * Employs official high-resolution NASA/JPL photographic maps, elevation bump maps,
- * specular ocean reflectivity, dynamic cloud decks, night city lights, and Rayleigh atmospheric scattering.
- */
+/** Celestial surface renderer with sourced shapes and explicitly reconstructed appearances. */
 
+import { shapeScale, bodyOrientation } from '../../astronomy/scienceCatalog';
+import { dateToJulianDate } from '../../astronomy/kepler';
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 
@@ -23,6 +21,7 @@ import {
   restoreDataTextureRoles,
 } from '../../textures/textureLoader';
 import { AtmosphereGlow } from './AtmosphereGlow';
+import { MoonMarkers } from './MoonMarkers';
 import { MoonBody } from './MoonBody';
 import { PlanetaryRings, RingShadowOnPlanet } from './PlanetaryRings';
 import { EarthNightLights } from './EarthNightLights';
@@ -33,6 +32,7 @@ interface PlanetBodyProps {
 
 export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const {
+    getSimulationDate,
     getBodyEphemeris,
     getBodyPosition,
     scaleMode,
@@ -53,7 +53,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   // Pass body.id so educational radius calibration is applied
   const radius = scaleRadius(body.physical.radiusKm, body.type, scaleMode, body.id);
 
-  // Load official high-res NASA maps with procedural fallback
+  // Load catalog surface maps with an explicitly illustrative fallback.
   const texture = useMemo(() => {
     return loadPlanetTexture(`${body.id}.jpg`, body.textureType);
   }, [body.id, body.textureType]);
@@ -98,10 +98,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   }, [body.rings, body.id]);
 
   // Haumea's famous elongated rugby-ball shape due to 3.9-hour rapid spin
-  const geometryScale: [number, number, number] = useMemo(() => {
-    if (body.id === 'haumea') return [1.85, 1.0, 0.78];
-    return [1.0, 1.0, 1.0];
-  }, [body.id]);
+  const geometryScale = useMemo(() => shapeScale(body), [body]);
 
   // Child moons
   const childMoons = useMemo(() => {
@@ -120,10 +117,16 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
     if (!ephemeris || !scaledPos) return;
     planetGroupRef.current.position.set(scaledPos.x, scaledPos.y, scaledPos.z);
 
-    // Spin planet around its axial tilt
+    const orientation=bodyOrientation(body,dateToJulianDate(getSimulationDate()));
+    if(orientation && spinGroupRef.current) {
+      const pole=new THREE.Vector3(orientation.pole.x,orientation.pole.y,orientation.pole.z);
+      const prime=new THREE.Vector3(orientation.prime.x,orientation.prime.y,orientation.prime.z);
+      spinGroupRef.current.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(prime,pole,prime.clone().cross(pole)));
+    }
+    // Spin planet around its sourced pole
     if (surfaceSpinRef.current) {
       const rotRad = THREE.MathUtils.degToRad(ephemeris.rotationAngleDeg);
-      surfaceSpinRef.current.rotation.y = rotRad;
+      surfaceSpinRef.current.rotation.y = orientation ? orientation.meridian : rotRad;
     }
 
     // Spin Earth clouds slightly faster than terrain
@@ -255,9 +258,10 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         )}
       </group>
 
+      {viewToggles.showMoons && <MoonMarkers parentId={body.id} />}
       {/* Child Moons */}
       {viewToggles.showMoons &&
-        childMoons.map((moon) => (
+        childMoons.filter(moon=>moon.physical.radiusKm>=100 || selectedBodyId===moon.id).map((moon) => (
           <MoonBody
             key={moon.id}
             moon={moon}

@@ -4,7 +4,7 @@
 
 export type ScaleMode = 'educational' | 'real' | 'hybrid';
 
-export type CameraMode = 'free' | 'focus' | 'follow' | 'top' | 'ecliptic';
+export type CameraMode = 'system' | 'free' | 'focus' | 'follow' | 'top' | 'ecliptic';
 
 export type CelestialType = 'star' | 'planet' | 'dwarf' | 'moon' | 'comet' | 'asteroid';
 
@@ -14,7 +14,9 @@ export type CelestialType = 'star' | 'planet' | 'dwarf' | 'moon' | 'comet' | 'as
 export interface OrbitMetadata {
   /** Julian date of the numerical element epoch; UTC is treated as approximate dynamical time. */
   epochJD?: number;
-  referencePlane?: 'ecliptic-j2000' | 'parent-equator';
+  poleRA?: number;
+  poleDec?: number;
+  referencePlane?: 'ecliptic-j2000' | 'parent-equator' | 'laplace';
   /** Exact source of these numbers, or explicitly unverified legacy/illustrative data. */
   provenance?: { status: 'sourced' | 'illustrative' | 'mixed'; sourceUrls: string[]; note: string };
   /** Local comparison interval, not an accuracy guarantee. Outside it propagation is illustrative. */
@@ -110,6 +112,7 @@ export interface RingSystem {
  * Complete celestial body specification
  */
 export interface CelestialBody {
+  science?: { code: number; physicalSource: string; unknownPhysical: boolean; appearance: string; radiiKm?: readonly number[] };
   id: string;
   name: string;
   type: CelestialType;

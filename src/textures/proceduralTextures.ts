@@ -1,6 +1,7 @@
+import { SATURN_RINGS, saturnRingOpacity } from '../astronomy/rings';
 /**
  * 3D Solar System Simulator — Comprehensive Dedicated Planetary Texture Suite
- * Handcrafted, scientifically authentic procedural textures for all dwarf planets,
+ * Handcrafted illustrative procedural textures for all dwarf planets,
  * major moons, comets, and terrestrial bodies.
  */
 
@@ -714,145 +715,25 @@ export function getCelestialBumpMap(type: string): THREE.CanvasTexture {
 
 /**
  * Generate 4096-sample ultra-high-definition Saturn radial ring texture
- * Accurately models D Ring, C Ring (Crepe), B Ring, Cassini Division, A Ring, Encke Gap, Keeler Gap, and F Ring.
+ * Uses sourced circular D–F ring boundaries with representative optical depths.
  */
 export function getSaturnRingTexture(): THREE.CanvasTexture {
-  if (textureCache.has('saturn-ring')) {
-    return textureCache.get('saturn-ring')!;
+  const cached=textureCache.get('saturn-rings');
+  if(cached)return cached;
+  const canvas=document.createElement('canvas');canvas.width=8192;canvas.height=1;
+  const context=canvas.getContext('2d');if(!context)throw new Error('Cannot generate ring profile');
+  const image=context.createImageData(canvas.width,1);
+  for(let index=0;index<canvas.width;index++) {
+    const radius=SATURN_RINGS.innerKm+(SATURN_RINGS.outerKm-SATURN_RINGS.innerKm)*(index+0.5)/canvas.width;
+    image.data.set([220,210,190,Math.round(saturnRingOpacity(radius)*255)],index*4);
   }
-
-  const width = 4096;
-  const height = 64;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
-
-  const imgData = ctx.createImageData(width, height);
-  const data = imgData.data;
-
-  // Ultra-fine micro-ringlet noise generator for authentic Cassini ringlet structure
-  for (let x = 0; x < width; x++) {
-    const r = x / width;
-    let alpha = 0.0;
-    let red = 230;
-    let green = 215;
-    let blue = 185;
-
-    // High frequency micro-ringlet density ripple
-    const microRipple1 = Math.sin(r * 1800.0) * 0.06;
-    const microRipple2 = Math.cos(r * 4200.0) * 0.035;
-    const microNoise = microRipple1 + microRipple2;
-
-    if (r < 0.02) {
-      // Inner empty void
-      alpha = 0.0;
-    } else if (r < 0.11) {
-      // D Ring: Ethereal inner dust veil
-      const t = (r - 0.02) / 0.09;
-      alpha = Math.sin(t * Math.PI) * 0.12;
-      red = 160;
-      green = 145;
-      blue = 130;
-    } else if (r < 0.36) {
-      // C Ring (Crepe Ring): Translucent amber-grey ice sheets with Colombo & Maxwell gaps
-      const t = (r - 0.11) / 0.25;
-      let baseAlpha = 0.28 + t * 0.18 + microNoise;
-
-      // Colombo Gap at r ~ 0.185
-      if (Math.abs(r - 0.185) < 0.008) baseAlpha *= 0.15;
-      // Maxwell Gap at r ~ 0.315
-      if (Math.abs(r - 0.315) < 0.009) baseAlpha *= 0.12;
-
-      alpha = Math.max(0.02, Math.min(0.65, baseAlpha));
-      red = 195 + Math.floor(t * 20);
-      green = 175 + Math.floor(t * 25);
-      blue = 145 + Math.floor(t * 30);
-    } else if (r < 0.38) {
-      // Inner B-ring transition (Bond Gap)
-      const t = (r - 0.36) / 0.02;
-      alpha = 0.35 + t * 0.58;
-      red = 225;
-      green = 205;
-      blue = 175;
-    } else if (r < 0.72) {
-      // B Ring: The colossal, densest, brightest core!
-      const t = (r - 0.38) / 0.34;
-      // Multi-frequency dense ringlets and brightness variations
-      const densityWave = Math.sin(t * 48.0) * 0.06 + Math.sin(t * 12.0) * 0.08;
-      alpha = Math.min(0.98, 0.92 + densityWave + microNoise * 0.5);
-
-      const brightness = 235 + Math.floor(densityWave * 30);
-      red = Math.min(255, brightness);
-      green = Math.min(255, Math.floor(brightness * 0.93));
-      blue = Math.min(255, Math.floor(brightness * 0.78));
-    } else if (r < 0.785) {
-      // Cassini Division: Famous 4,800-km-wide dark gap!
-      const t = (r - 0.72) / 0.065;
-      // Huygens gap near inner edge
-      const huygens = Math.sin(t * Math.PI);
-      alpha = 0.04 + huygens * 0.06 + Math.max(0.0, microNoise * 0.2);
-      red = 110;
-      green = 100;
-      blue = 90;
-    } else if (r < 0.955) {
-      // A Ring: Silvery-golden outer ring with Encke & Keeler Gaps
-      const t = (r - 0.785) / 0.17;
-      let baseAlpha = 0.76 + Math.sin(t * 36.0) * 0.05 + microNoise;
-
-      // Encke Gap at r ~ 0.910 (325 km wide, cleared by moon Pan)
-      if (Math.abs(r - 0.910) < 0.007) {
-        baseAlpha = 0.03;
-      }
-      // Keeler Gap at r ~ 0.948 (42 km wide, cleared by moon Daphnis)
-      if (Math.abs(r - 0.948) < 0.0035) {
-        baseAlpha = 0.03;
-      }
-
-      alpha = Math.max(0.02, Math.min(0.88, baseAlpha));
-      red = 220;
-      green = 208;
-      blue = 180;
-    } else if (r < 0.975) {
-      // Roche Division gap
-      alpha = 0.02;
-    } else if (r < 0.992) {
-      // F Ring: Delicate outer braided shepherd ringlet (shepherded by Prometheus & Pandora)
-      const t = (r - 0.975) / 0.017;
-      const fPeak = Math.sin(t * Math.PI);
-      alpha = Math.pow(fPeak, 3.0) * 0.65;
-      red = 230;
-      green = 220;
-      blue = 200;
-    } else {
-      // Space boundary falloff
-      alpha = 0.0;
-    }
-
-    for (let y = 0; y < height; y++) {
-      const idx = (y * width + x) * 4;
-      data[idx] = red;
-      data[idx + 1] = green;
-      data[idx + 2] = blue;
-      data[idx + 3] = Math.floor(alpha * 255);
-    }
-  }
-
-  ctx.putImageData(imgData, 0, 0);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.generateMipmaps = true;
-  textureCache.set('saturn-ring', texture);
-
+  context.putImageData(image,0,0);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=texture.wrapT=THREE.ClampToEdgeWrapping;textureCache.set('saturn-rings',texture);
   return texture;
 }
 
-/**
- * Generate thin, dark charcoal/slate concentric rings for Uranus
- */
+/** Illustrative Uranus ring appearance. */
 export function getUranusRingTexture(): THREE.CanvasTexture {
   if (textureCache.has('uranus-ring')) {
     return textureCache.get('uranus-ring')!;

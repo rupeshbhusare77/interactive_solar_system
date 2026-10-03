@@ -64,3 +64,26 @@ test('failed Earth maps recover without replacing the scene', async ({ page }) =
   await expect(page.locator('summary').filter({ hasText: /Using fallback maps for 1/ })).toBeVisible();
   await expect(page.locator('canvas')).toBeVisible();
 });
+
+test('Saturn catalog, system framing, reference accuracy, and unknown physical data', async ({ page }, testInfo) => {
+  await page.goto('./');
+  await page.getByRole('button', { name:'Reset date to now', exact:true }).click();
+  const search=page.getByRole('combobox',{name:'Search celestial bodies'});
+  await search.fill('Saturn');await search.press('ArrowDown');await search.press('Enter');
+  await expect(page.getByRole('heading',{name:'Saturn',exact:true})).toBeVisible();
+  const details=page.getByRole('button',{name:'Details',exact:true});
+  if(await details.isVisible())await details.click();
+  await expect(page.getByText(/293 cataloged; 291 with orbital data/)).toBeVisible();
+  await page.getByRole('button',{name:'Explore Moon System'}).click();
+  await page.getByLabel('Filter moons').fill('Rhea');
+  await expect(page.getByRole('button',{name:/Rhea/})).toBeVisible();
+  await page.getByRole('button',{name:/Rhea/}).click();
+  await expect(page.getByLabel('Scientific accuracy')).toContainText('JPL reference interpolation');
+  await expect(page.getByRole('link',{name:'Surface map and credits'})).toBeVisible();
+  await page.screenshot({path:testInfo.outputPath('rhea.png')});
+  await page.getByRole('button',{name:'Close telemetry panel',exact:true}).click();
+  await search.fill('S/2020 S 1');await search.press('ArrowDown');await search.press('Enter');
+  await page.getByRole('tab',{name:'Physical',exact:true}).click();
+  await expect(page.getByLabel(/information/)).not.toContainText('NaN');
+  await expect(page.getByRole('alert',{name:'Scene recovery'})).not.toBeVisible();
+});

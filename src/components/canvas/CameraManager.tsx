@@ -9,7 +9,7 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { OrbitControls } from '@react-three/drei';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
-import { bodyViewRadius, systemViewRadius, fitViewDistance, ViewRegion } from '../../astronomy/viewBounds';
+import { satelliteSystemRadius, bodyViewRadius, systemViewRadius, fitViewDistance, ViewRegion } from '../../astronomy/viewBounds';
 
 export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'outer' }) => {
   const { cameraMode, selectedBodyId, getBodyPosition, scaleMode } = useSimulation();
@@ -29,7 +29,7 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
   const targetPosition = useMemo(() => new THREE.Vector3(), []);
   const targetCamera = useMemo(() => new THREE.Vector3(), []);
   const selectedBody = selectedBodyId ? CELESTIAL_BODY_MAP.get(selectedBodyId) : null;
-  const bodyRadius = selectedBody ? bodyViewRadius(selectedBody, scaleMode) : 1;
+  const bodyRadius = selectedBody ? cameraMode==='system' ? satelliteSystemRadius(selectedBody,scaleMode) : bodyViewRadius(selectedBody, scaleMode) : 1;
   const systemRadius = useMemo(() => systemViewRadius(scaleMode, region), [scaleMode, region]);
   const fullRadius = useMemo(() => systemViewRadius(scaleMode, 'full'), [scaleMode]);
 
@@ -42,7 +42,7 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
         cameraMode === 'top' ? distance * 0.001 : distance);
       controlsRef.current.target.set(0, 0, 0);
       transitioning.current = false;
-    } else if (selectedBody && (cameraMode === 'focus' || cameraMode === 'follow')) {
+    } else if (selectedBody && (cameraMode === 'system' || cameraMode === 'focus' || cameraMode === 'follow')) {
       const distance = fitViewDistance(bodyRadius, camera.fov, aspect);
       followOffset.current.set(0.7, 0.35, 1).normalize().multiplyScalar(distance);
       transitioning.current = true;
@@ -54,7 +54,7 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
   useSceneFrame((_, delta) => {
     const controls = controlsRef.current;
     if (!controls || !(camera instanceof THREE.PerspectiveCamera)) return;
-    if (selectedBody && (cameraMode === 'focus' || cameraMode === 'follow')) {
+    if (selectedBody && (cameraMode === 'system' || cameraMode === 'focus' || cameraMode === 'follow')) {
       const position = getBodyPosition(selectedBody.id, scaleMode)?.displayPosition;
       if (!position) return;
       targetPosition.set(position.x, position.y, position.z);
@@ -73,7 +73,7 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
     }
 
     const distance = camera.position.distanceTo(controls.target);
-    const inspecting = selectedBody && (cameraMode === 'focus' || cameraMode === 'follow');
+    const inspecting = selectedBody && (cameraMode === 'system' || cameraMode === 'focus' || cameraMode === 'follow');
     const radius = inspecting ? bodyRadius : systemRadius;
     const near = Math.max(1e-7, inspecting ? (distance - radius) * 0.1 : distance * 0.001);
     const far = Math.max(distance + radius * 4, camera.position.length() + fullRadius * 1.2);
