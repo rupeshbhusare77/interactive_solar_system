@@ -48,7 +48,7 @@ export const PlanetQuickDock: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.style.setProperty(
-      '--dock-width',
+      '--preferred-dock-width',
       isCollapsed ? '3.25rem' : '10rem'
     );
   }, [isCollapsed]);

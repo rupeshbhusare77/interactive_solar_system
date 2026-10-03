@@ -157,3 +157,52 @@ test('focus and follow retain other planets and respect the orbit layer', async 
     await page.keyboard.press('Escape');
   }
 });
+
+
+test('responsive controls stay reachable after resizing and opening settings', async ({ page }, testInfo) => {
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Reset date to now', exact: true }).click();
+  for (const viewport of [
+    { width: 320, height: 568 }, { width: 390, height: 844 },
+    { width: 667, height: 375 }, { width: 844, height: 390 },
+    { width: 768, height: 1024 }, { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const header = page.locator('.app-header');
+    const initialHeight = (await header.boundingBox())!.height;
+    if (viewport.width < 768) {
+      for (let count = 0; count < 2; count++) {
+        await page.getByRole('button', { name: 'Open settings menu', exact: true }).click();
+        const settings = page.getByRole('region', { name: 'Display settings' });
+        await expect(settings).toBeVisible();
+        const bounds = (await settings.boundingBox())!;
+        expect(bounds.y).toBeGreaterThanOrEqual(initialHeight);
+        expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+        await settings.getByRole('button', { name: 'Moons', exact: true }).scrollIntoViewIfNeeded();
+        if (count === 0) await page.screenshot({ path: testInfo.outputPath(`settings-${viewport.width}x${viewport.height}.png`) });
+        await page.getByRole('button', { name: 'Close settings menu', exact: true }).click();
+        expect(Math.abs((await header.boundingBox())!.height - initialHeight)).toBeLessThan(2);
+      }
+    }
+    for (const selector of ['.app-header', '.header-search', '.header-actions', '.timeline-panel', '.quick-dock']) {
+      const box = (await page.locator(selector).boundingBox())!;
+      expect(box.x, selector).toBeGreaterThanOrEqual(0);
+      expect(box.y, selector).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, selector).toBeLessThanOrEqual(viewport.width + 1);
+      expect(box.y + box.height, selector).toBeLessThanOrEqual(viewport.height + 1);
+    }
+    await page.getByRole('button', { name: 'Visual layers', exact: true }).click();
+    const layers = (await page.getByRole('group', { name: 'Visual layers', exact: true }).boundingBox())!;
+    expect(layers.x).toBeGreaterThanOrEqual(0);
+    expect(layers.x + layers.width).toBeLessThanOrEqual(viewport.width + 1);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Set simulation date', exact: true }).click();
+    const date = (await page.locator('.timeline-popover').boundingBox())!;
+    expect(date.x).toBeGreaterThanOrEqual(0);
+    expect(date.y).toBeGreaterThanOrEqual(0);
+    expect(date.x + date.width).toBeLessThanOrEqual(viewport.width + 1);
+    await page.getByRole('button', { name: 'Set simulation date', exact: true }).click();
+    await page.screenshot({ path: testInfo.outputPath(`responsive-${viewport.width}x${viewport.height}.png`) });
+  }
+});

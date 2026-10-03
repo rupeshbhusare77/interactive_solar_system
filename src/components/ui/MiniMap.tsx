@@ -117,7 +117,7 @@ export const MiniMap: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsMobileOpen(false)}
-                  className="md:hidden p-0.5 text-zinc-400 hover:text-white"
+                  className="radar-close md:hidden p-0.5 text-zinc-400 hover:text-white"
                   aria-label="Close radar"
                 >
                   <X className="w-3.5 h-3.5" />

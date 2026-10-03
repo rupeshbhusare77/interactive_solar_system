@@ -96,6 +96,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
 
   const headerRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mobileButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const scaleButtonRef = useRef<HTMLButtonElement>(null);
   const scaleMenuRef = useRef<HTMLDivElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
@@ -107,6 +109,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
   const scaleId = useId();
   const cameraId = useId();
   const layersId = useId();
+  const mobileId = useId();
 
   const query = searchQuery.trim().replace(/\s+/g, ' ').toLowerCase();
   const filteredBodies = query
@@ -166,6 +169,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       const target = event.target as Node;
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target) && !mobileButtonRef.current?.contains(target)) setIsMobileMenuOpen(false);
       if (scaleMenuRef.current && !scaleMenuRef.current.contains(target)) setIsScaleOpen(false);
       if (cameraMenuRef.current && !cameraMenuRef.current.contains(target)) setIsCameraOpen(false);
       if (viewMenuRef.current && !viewMenuRef.current.contains(target)) setIsViewMenuOpen(false);
@@ -645,7 +649,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
         {/* Mobile Settings Menu Toggle */}
         <button
           type="button"
-          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          ref={mobileButtonRef}
+          aria-controls={mobileId}
+          onClick={() => {
+            setIsMobileMenuOpen((prev) => !prev);
+            setIsViewMenuOpen(false);
+            setIsSearchOpen(false);
+          }}
           aria-label={isMobileMenuOpen ? 'Close settings menu' : 'Open settings menu'}
           aria-expanded={isMobileMenuOpen}
           className={`md:hidden p-2 text-xs rounded-lg glass-button transition-colors ${
@@ -662,7 +672,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
 
       {/* Mobile Settings & View Drawer */}
       {isMobileMenuOpen && (
-        <div className="md:hidden w-full mt-2 p-3 glass-panel rounded-2xl border border-zinc-700/80 shadow-2xl flex flex-col gap-3 text-xs z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div ref={mobileMenuRef} id={mobileId} role="region" aria-label="Display settings"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setIsMobileMenuOpen(false);
+              mobileButtonRef.current?.focus();
+            }
+          }}
+          className="mobile-settings md:hidden p-3 glass-panel rounded-2xl border border-zinc-700/80 shadow-2xl flex flex-col gap-3 text-xs z-50">
           {/* Scale selection */}
           <div>
             <div className="text-[10px] font-mono uppercase text-zinc-400 mb-1.5 flex items-center gap-1.5">
