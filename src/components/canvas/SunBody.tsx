@@ -11,7 +11,7 @@ import { useSimulation } from '../../state/simulationContext';
 import { loadPlanetTexture } from '../../textures/textureLoader';
 
 export const SunBody: React.FC = () => {
-  const { scaleMode, selectedBodyId, selectBody, hoveredBodyId, setHoveredBodyId, viewToggles, getSimulationDate } =
+  const { scaleMode, selectedBodyId, selectBody, setHoveredBodyId, viewToggles, getSimulationDate } =
     useSimulation();
   const sunMeshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -21,8 +21,9 @@ export const SunBody: React.FC = () => {
   // Legacy solar map; source status is recorded in ASSET_SOURCES.md.
   const texture = useMemo(() => loadPlanetTexture('sun.jpg', 'sun'), []);
 
+  const surfaceUniforms = useMemo(() => ({ surfaceMap: { value: texture } }), [texture]);
   const isSelected = selectedBodyId === 'sun';
-  const isHovered = hoveredBodyId === 'sun';
+
 
   useSceneFrame(({ camera }) => {
     if (sunMeshRef.current) {
@@ -62,10 +63,36 @@ export const SunBody: React.FC = () => {
           document.body.style.cursor = 'auto';
         }}
       >
-        <sphereGeometry args={[radius, 64, 64]} />
-        <meshBasicMaterial
-          map={texture}
-          color="#ffffff"
+        <sphereGeometry args={[radius, 96, 64]} />
+        <shaderMaterial
+          uniforms={surfaceUniforms}
+          vertexShader={`
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            void main() {
+              vUv = uv;
+              vNormal = normalMatrix * normal;
+              vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+              vViewPosition = -viewPosition.xyz;
+              gl_Position = projectionMatrix * viewPosition;
+            }`}
+          fragmentShader={`
+            uniform sampler2D surfaceMap;
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vViewPosition;
+            void main() {
+              vec3 mapColor = texture2D(surfaceMap, vUv).rgb;
+              float detail = dot(mapColor, vec3(0.2126, 0.7152, 0.0722));
+              float mu = clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0);
+              // Approximate visible-light limb darkening, not a calibrated solar spectrum.
+              float limb = 0.4 + 0.6 * mu;
+              vec3 warmth = mix(vec3(1.0, 0.26, 0.035), vec3(1.0, 0.48, 0.09), sqrt(mu));
+              gl_FragColor = vec4(warmth * pow(detail, 1.65) * limb * 1.25, 1.0);
+              #include <tonemapping_fragment>
+              #include <colorspace_fragment>
+            }`}
         />
       </mesh>
 
@@ -80,8 +107,9 @@ export const SunBody: React.FC = () => {
             void main(){
               float r=length(vUv-0.5)*2.0;
               float outside=max(0.0,r-0.4);
-              float halo=exp(-outside*18.0)*(1.0-smoothstep(0.4,1.0,r))*smoothstep(0.37,0.42,r);
-              gl_FragColor=vec4(1.0,0.72,0.36,halo*0.24);
+              float halo=(0.18*exp(-outside*26.0)+0.035*exp(-outside*7.0))
+                *(1.0-smoothstep(0.6,1.0,r))*smoothstep(0.38,0.405,r);
+              gl_FragColor=vec4(1.0,0.88,0.65,halo);
               #include <tonemapping_fragment>
               #include <colorspace_fragment>
             }`}
@@ -92,8 +120,8 @@ export const SunBody: React.FC = () => {
       {isSelected && (
         <group ref={reticleRef}>
           <mesh>
-            <ringGeometry args={[radius * 1.35, radius * 1.38, 64]} />
-            <meshBasicMaterial color="#fbbf24" side={THREE.DoubleSide} transparent opacity={0.4} />
+            <ringGeometry args={[radius * 1.35, radius * 1.356, 128]} />
+            <meshBasicMaterial color="#fbbf24" side={THREE.DoubleSide} transparent opacity={0.3} />
           </mesh>
         </group>
       )}
