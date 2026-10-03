@@ -1,11 +1,12 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Kuiper Belt Component
  * GPU-Instanced rendering of 2,200+ icy trans-Neptunian objects past 30 AU.
  */
 
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { useSimulation } from '../../state/simulationContext';
 import { scalePosition } from '../../astronomy/scaling';
 import { solveKepler, getDaysSinceJ2000 } from '../../astronomy/kepler';
@@ -23,7 +24,7 @@ interface KuiperObject {
 
 export const KuiperBelt: React.FC = () => {
   const { getSimulationDate, scaleMode, viewToggles } = useSimulation();
-  const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
+  const instancedMeshRef = useRef<THREE.InstancedMesh | null>(null);
 
   const count = 1800;
 
@@ -54,27 +55,33 @@ export const KuiperBelt: React.FC = () => {
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  useEffect(() => {
-    if (!instancedMeshRef.current) return;
-    const mesh = instancedMeshRef.current;
+  const colors = useMemo(() => {
+    const values = new Float32Array(count * 3);
     const color = new THREE.Color();
-
-    for (let i = 0; i < count; i++) {
-      if (Math.random() < 0.6) {
-        color.setHSL(0.58, 0.25, 0.6 + Math.random() * 0.2);
-      } else {
-        color.setHSL(0.06, 0.35, 0.5 + Math.random() * 0.2);
-      }
-      mesh.setColorAt(i, color);
+    for (let index = 0; index < count; index++) {
+      if (Math.random() < 0.6) color.setHSL(0.58, 0.25, 0.6 + Math.random() * 0.2);
+      else color.setHSL(0.06, 0.35, 0.5 + Math.random() * 0.2);
+      color.toArray(values, index * 3);
     }
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    return values;
   }, [count]);
+  const lastFrame = useRef({ timestamp: NaN, scale: scaleMode });
+  const initializeMesh = useCallback((mesh: THREE.InstancedMesh | null) => {
+    instancedMeshRef.current = mesh;
+    if (mesh) {
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
+      lastFrame.current.timestamp = NaN;
+    }
+  }, [colors]);
 
-  useFrame(() => {
+  useSceneFrame(() => {
     if (!instancedMeshRef.current || !viewToggles.showKuiperBelt) return;
 
     const mesh = instancedMeshRef.current;
-    const d = getDaysSinceJ2000(getSimulationDate());
+    const date = getSimulationDate();
+    const timestamp = date.getTime();
+    if (lastFrame.current.timestamp === timestamp && lastFrame.current.scale === scaleMode) return;
+    const d = getDaysSinceJ2000(date);
 
     for (let idx = 0; idx < count; idx++) {
       const obj = objects[idx];
@@ -110,13 +117,14 @@ export const KuiperBelt: React.FC = () => {
     }
 
     mesh.instanceMatrix.needsUpdate = true;
+    lastFrame.current = { timestamp, scale: scaleMode };
   });
 
   if (!viewToggles.showKuiperBelt) return null;
 
   return (
     <instancedMesh
-      ref={instancedMeshRef}
+      ref={initializeMesh} name="kuiper-belt"
       args={[undefined, undefined, count]}
       frustumCulled={false}
     >

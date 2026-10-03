@@ -1,3 +1,4 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Comet Body Component
  * Extreme eccentric Keplerian orbits, coma, and dynamic ion/dust tails pointing away from the Sun.
@@ -5,7 +6,7 @@
 
 import React, { useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
 import { scaleRadius } from '../../astronomy/scaling';
@@ -35,7 +36,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
   const isSelected = selectedBodyId === comet.id;
   const isHovered = hoveredBodyId === comet.id;
 
-  useFrame(() => {
+  useSceneFrame(() => {
     if (!comet.orbitalElements || !groupRef.current) return;
 
     // Ephemeris at current simulation time
@@ -58,18 +59,20 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
       tailGroupRef.current.lookAt(targetPoint);
 
       if (ionTailMeshRef.current) {
-        ionTailMeshRef.current.scale.set(1, 1, tailLength);
+        ionTailMeshRef.current.scale.set(1, tailLength, 1);
+        ionTailMeshRef.current.position.z = tailLength / 2;
         (ionTailMeshRef.current.material as THREE.MeshBasicMaterial).opacity = activityFactor * 0.7;
       }
       if (dustTailMeshRef.current) {
-        dustTailMeshRef.current.scale.set(1.4, 1.4, tailLength * 0.85);
+        dustTailMeshRef.current.scale.set(1.4, tailLength * 0.85, 1.4);
+        dustTailMeshRef.current.position.z = tailLength * 0.85 / 2;
         (dustTailMeshRef.current.material as THREE.MeshBasicMaterial).opacity = activityFactor * 0.45;
       }
     }
   });
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} name={comet.id}>
       {/* Comet Nucleus */}
       <mesh
         onClick={(e) => {
@@ -103,7 +106,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
 
       {/* Cometary Tail Group */}
       <group ref={tailGroupRef}>
-        <mesh ref={ionTailMeshRef} position={[0, 0, 0.5]}>
+        <mesh ref={ionTailMeshRef} name={`${comet.id}-ion-tail`} rotation={[-Math.PI / 2, 0, 0]}>
           <coneGeometry args={[radius * 1.5, 1, 16, 1, true]} />
           <meshBasicMaterial
             color="#38bdf8"
@@ -115,7 +118,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
           />
         </mesh>
 
-        <mesh ref={dustTailMeshRef} position={[0.2, 0, 0.4]}>
+        <mesh ref={dustTailMeshRef} rotation={[-Math.PI / 2, 0, 0]}>
           <coneGeometry args={[radius * 2.5, 1, 16, 1, true]} />
           <meshBasicMaterial
             color="#fef08a"

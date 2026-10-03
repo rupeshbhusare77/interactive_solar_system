@@ -4,7 +4,6 @@
  */
 
 import React, { useMemo } from 'react';
-import * as THREE from 'three';
 import { CelestialBody } from '../../astronomy/types';
 import { generateOrbitPathPoints } from '../../astronomy/kepler';
 import { scalePosition } from '../../astronomy/scaling';
@@ -36,9 +35,7 @@ export const OrbitPath: React.FC<OrbitPathProps> = ({ body }) => {
       positions[i * 3 + 2] = scaled.z;
     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    return geometry;
+    return positions;
   }, [body.orbitalElements, body.type, scaleMode]);
 
   if (!viewToggles.showOrbits || !linePoints) return null;
@@ -53,7 +50,10 @@ export const OrbitPath: React.FC<OrbitPathProps> = ({ body }) => {
   const color = isSelected ? '#38bdf8' : body.physical.color;
 
   return (
-    <lineLoop geometry={linePoints}>
+    <lineLoop>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[linePoints, 3]} />
+      </bufferGeometry>
       <lineBasicMaterial
         color={color}
         transparent

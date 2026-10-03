@@ -4,14 +4,12 @@
  * fading smoothly across the twilight atmospheric terminator.
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
 
 interface EarthNightLightsProps {
   radius: number;
   nightTexture: THREE.Texture;
-  spinGroupRef: React.RefObject<THREE.Group>;
 }
 
 const NIGHT_VERTEX_SHADER = `
@@ -45,7 +43,7 @@ void main() {
 
   // Twilight terminator transition: city lights fade in as darkness falls
   // Starts fading in at dusk (+0.05) and reaches full brightness at night (-0.20)
-  float nightFactor = smoothstep(0.05, -0.22, nDotL);
+  float nightFactor = 1.0 - smoothstep(-0.22, 0.05, nDotL);
   if (nightFactor <= 0.001) discard;
 
   vec4 lights = texture2D(uNightTexture, vUv);
@@ -56,6 +54,8 @@ void main() {
   float alpha = lights.r * nightFactor * 0.95;
 
   gl_FragColor = vec4(cityColor, alpha);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }
 `;
 
@@ -63,7 +63,6 @@ export const EarthNightLights: React.FC<EarthNightLightsProps> = ({
   radius,
   nightTexture,
 }) => {
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   const uniforms = useMemo(
     () => ({
@@ -73,16 +72,11 @@ export const EarthNightLights: React.FC<EarthNightLightsProps> = ({
     [nightTexture]
   );
 
-  useFrame(() => {
-    if (!materialRef.current) return;
-    materialRef.current.uniforms.uSunPosition.value.set(0, 0, 0);
-  });
 
   return (
-    <mesh>
+    <mesh name="earth-night-lights">
       <sphereGeometry args={[radius * 1.0015, 64, 64]} />
       <shaderMaterial
-        ref={materialRef}
         vertexShader={NIGHT_VERTEX_SHADER}
         fragmentShader={NIGHT_FRAGMENT_SHADER}
         uniforms={uniforms}
