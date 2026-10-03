@@ -243,17 +243,28 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           />
         ))}
 
-      {/* Selection Ring */}
+      {/* Sci-Fi Holographic Target Reticle */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.35, radius * 1.45, 64]} />
-          <meshBasicMaterial
-            color="#38bdf8"
-            side={THREE.DoubleSide}
-            transparent
-            opacity={0.85}
-          />
-        </mesh>
+        <group rotation={[-Math.PI / 2, 0, 0]}>
+          <mesh>
+            <ringGeometry args={[radius * 1.32, radius * 1.4, 64]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.85}
+            />
+          </mesh>
+          <mesh>
+            <ringGeometry args={[radius * 1.5, radius * 1.55, 64]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.35}
+            />
+          </mesh>
+        </group>
       )}
 
       {/* Contextual Planet Label */}
@@ -266,13 +277,17 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         >
           <div className="flex flex-col items-center">
             <span
-              className={`px-2 py-0.5 rounded text-xs font-semibold tracking-wide transition-all shadow-lg ${
+              className={`px-2 py-0.5 rounded text-xs font-semibold tracking-wide transition-all shadow-lg flex items-center gap-1.5 ${
                 isSelected
                   ? 'bg-sky-500 text-black shadow-glow-cyan font-bold ring-1 ring-white'
                   : 'bg-black/80 text-white border border-white/20'
               }`}
             >
-              {body.name}
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: body.physical.color }}
+              />
+              <span>{body.name}</span>
             </span>
           </div>
         </Html>
