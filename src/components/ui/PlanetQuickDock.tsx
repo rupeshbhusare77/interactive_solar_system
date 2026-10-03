@@ -167,5 +167,3 @@ export const PlanetQuickDock: React.FC = () => {
     </aside>
   );
 };
-
-

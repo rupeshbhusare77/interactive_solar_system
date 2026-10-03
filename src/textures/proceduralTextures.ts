@@ -617,6 +617,7 @@ export function getCelestialTexture(type: string): THREE.CanvasTexture {
   ctx.putImageData(imgData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   textureCache.set(type, texture);
@@ -840,6 +841,7 @@ export function getSaturnRingTexture(): THREE.CanvasTexture {
   ctx.putImageData(imgData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.generateMipmaps = true;
@@ -909,6 +911,7 @@ export function getUranusRingTexture(): THREE.CanvasTexture {
   ctx.putImageData(imgData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   textureCache.set('uranus-ring', texture);
@@ -954,9 +957,17 @@ export function getHaumeaRingTexture(): THREE.CanvasTexture {
   ctx.putImageData(imgData, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   textureCache.set('haumea-ring', texture);
 
   return texture;
+}
+
+/** Transfer procedural cache ownership to the scene manager on final teardown. */
+export function clearProceduralTextureCache(): THREE.Texture[] {
+  const textures = [...textureCache.values()];
+  textureCache.clear();
+  return textures;
 }

@@ -1,3 +1,4 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Photorealistic Planetary Renderer
  * Employs official high-resolution NASA/JPL photographic maps, elevation bump maps,
@@ -6,7 +7,7 @@
 
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
 import { scaleRadius, scaleRingSystem } from '../../astronomy/scaling';
@@ -15,9 +16,11 @@ import { useSimulation } from '../../state/simulationContext';
 import {
   loadPlanetTexture,
   loadPlanetBumpMap,
-  loadPlanetNormalMap,
-  loadEarthRoughnessMap,
   loadRingTexture,
+  loadRingDensity,
+  loadEarthNormalMap,
+  loadEarthRoughnessMap,
+  restoreDataTextureRoles,
 } from '../../textures/textureLoader';
 import { AtmosphereGlow } from './AtmosphereGlow';
 import { MoonBody } from './MoonBody';
@@ -43,6 +46,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const planetGroupRef = useRef<THREE.Group>(null);
   const spinGroupRef = useRef<THREE.Group>(null);
   const surfaceMeshRef = useRef<THREE.Mesh>(null);
+  const surfaceSpinRef = useRef<THREE.Group>(null);
   const cloudsMeshRef = useRef<THREE.Mesh>(null);
   const reticleRef = useRef<THREE.Group>(null);
 
@@ -54,16 +58,10 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
     return loadPlanetTexture(`${body.id}.jpg`, body.textureType);
   }, [body.id, body.textureType]);
 
-  const normalMap = useMemo(() => {
-    if (body.id === 'earth') {
-      return loadPlanetNormalMap('earth_normal.jpg');
-    }
-    return null;
-  }, [body.id]);
-
   const bumpMap = useMemo(() => {
     if (['mars', 'mercury', 'venus', 'ceres', 'pluto'].includes(body.id)) {
-      return loadPlanetBumpMap(`${body.id}_bump.jpg`, body.textureType);
+      const filename = `${body.id}_bump.jpg`;
+      return loadPlanetBumpMap(filename, body.textureType);
     }
     return null;
   }, [body.id, body.textureType]);
@@ -74,6 +72,9 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
     }
     return null;
   }, [body.id]);
+
+  const normalMap = useMemo(() => body.id === 'earth' ? loadEarthNormalMap() : null, [body.id]);
+  const ringDensity = useMemo(() => body.rings ? loadRingDensity(body.id) : null, [body.id, body.rings]);
 
   const nightLightsTexture = useMemo(() => {
     if (body.id === 'earth') {
@@ -111,7 +112,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const isHovered = hoveredBodyId === body.id;
 
   // Real-time orbital mechanics update
-  useFrame(({ camera }) => {
+  useSceneFrame(({ camera }) => {
     if (!body.orbitalElements || !planetGroupRef.current) return;
 
     const ephemeris = getBodyEphemeris(body.id);
@@ -120,9 +121,9 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
     planetGroupRef.current.position.set(scaledPos.x, scaledPos.y, scaledPos.z);
 
     // Spin planet around its axial tilt
-    if (surfaceMeshRef.current) {
+    if (surfaceSpinRef.current) {
       const rotRad = THREE.MathUtils.degToRad(ephemeris.rotationAngleDeg);
-      surfaceMeshRef.current.rotation.y = rotRad;
+      surfaceSpinRef.current.rotation.y = rotRad;
     }
 
     // Spin Earth clouds slightly faster than terrain
@@ -153,12 +154,14 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const axialTiltRad = THREE.MathUtils.degToRad(body.physical.axialTiltDeg);
 
   return (
-    <group ref={planetGroupRef}>
+    <group ref={planetGroupRef} name={body.id}>
       {/* Tilted along polar spin axis */}
       <group ref={spinGroupRef} rotation={[axialTiltRad, 0, 0]}>
+        {/* Terrain and night lights share one prime meridian and spin transform. */}
+        <group ref={surfaceSpinRef}>
         {/* Planet Surface Sphere */}
         <mesh
-          ref={surfaceMeshRef}
+          ref={surfaceMeshRef} name={`${body.id}-surface`}
           scale={geometryScale}
           onClick={(e) => {
             e.stopPropagation();
@@ -176,20 +179,15 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         >
           <sphereGeometry args={[radius, 64, 64]} />
           <meshStandardMaterial
+            onUpdate={restoreDataTextureRoles}
             map={texture}
             color="#ffffff"
             normalMap={normalMap || undefined}
             normalScale={normalMap ? new THREE.Vector2(0.35, 0.35) : undefined}
             bumpMap={bumpMap || undefined}
-            bumpScale={bumpMap ? 0.035 : 0}
+            bumpScale={bumpMap ? radius * 0.025 : 0}
             roughnessMap={roughnessMap || undefined}
-            roughness={
-              body.id === 'earth'
-                ? 0.75
-                : body.textureType === 'gas-giant' || body.textureType === 'ice-giant'
-                ? 0.65
-                : 0.85
-            }
+            roughness={body.id === 'earth' ? 1 : ['gas-giant', 'ice-giant'].includes(body.textureType) ? 0.65 : 0.85}
             metalness={0.02}
             emissive={new THREE.Color(0x000000)}
             emissiveIntensity={0}
@@ -201,9 +199,9 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           <EarthNightLights
             radius={radius}
             nightTexture={nightLightsTexture}
-            spinGroupRef={spinGroupRef}
           />
         )}
+        </group>
 
         {/* Real-time Ring Shadow projected onto the planetary cloud deck */}
         {body.rings && ringsGeometryArgs && ringTexture && (
@@ -211,7 +209,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             innerRadius={ringsGeometryArgs.innerRadius}
             outerRadius={ringsGeometryArgs.outerRadius}
             planetVisualRadius={radius}
-            ringTexture={ringTexture}
+            ringDensity={ringDensity!}
             spinGroupRef={spinGroupRef}
           />
         )}
@@ -249,6 +247,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             outerRadius={ringsGeometryArgs.outerRadius}
             planetVisualRadius={radius}
             ringTexture={ringTexture}
+            ringDensity={ringDensity!}
             opacity={body.rings.opacity}
             ringColor={body.rings.color || '#ffffff'}
             planetWorldGroupRef={planetGroupRef}

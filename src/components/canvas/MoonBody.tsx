@@ -1,3 +1,4 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Real NASA Moon Body Component
  * Features authentic Apollo/LRO photographic lunar imagery, crater relief bump mapping,
@@ -6,14 +7,14 @@
 
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { CelestialBody } from '../../astronomy/types';
 import { calculateMoonSpinAxis, getDaysSinceJ2000 } from '../../astronomy/kepler';
 import { CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
 import { scaleRadius } from '../../astronomy/scaling';
 import { useSimulation } from '../../state/simulationContext';
-import { loadPlanetTexture } from '../../textures/textureLoader';
+import { loadPlanetTexture, restoreDataTextureRoles } from '../../textures/textureLoader';
 import { getCelestialBumpMap } from '../../textures/proceduralTextures';
 import { AtmosphereGlow } from './AtmosphereGlow';
 
@@ -73,7 +74,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
   const reticleRef = useRef<THREE.Group>(null);
 
   // Calculate current moon position relative to parent planet
-  useFrame(({ camera }) => {
+  useSceneFrame(({ camera }) => {
     if (!moon.moonOrbitalElements || !moonGroupRef.current) return;
 
     const scaledOffset = getBodyPosition(moon.id,scaleMode)?.displayOffset;
@@ -116,10 +117,11 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
       >
         <sphereGeometry args={[radius, 32, 32]} />
         <meshStandardMaterial
+          onUpdate={restoreDataTextureRoles}
           map={texture}
           color="#ffffff"
           bumpMap={bumpMap || undefined}
-          bumpScale={bumpMap ? 0.035 : 0}
+          bumpScale={bumpMap ? radius * 0.025 : 0}
           roughness={moon.id === 'enceladus' ? 0.2 : 0.88}
           metalness={0.04}
         />

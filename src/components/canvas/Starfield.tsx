@@ -1,13 +1,21 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Deep Space Milky Way Galaxy & Starfield
  * Features real photographic Milky Way panorama celestial skybox and multi-temperature twinkling stars.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+
 import * as THREE from 'three';
 import { loadPlanetTexture } from '../../textures/textureLoader';
 
 export const Starfield: React.FC = () => {
+  const skyRef = useRef<THREE.Group>(null);
+  useSceneFrame(({ camera }) => {
+    if (!skyRef.current) return;
+    skyRef.current.position.copy(camera.position);
+    skyRef.current.scale.setScalar(camera.far * 0.45 / 3200);
+  });
   const [positions, colors] = useMemo(() => {
     const starCount = 3800;
     const pos = new Float32Array(starCount * 3);
@@ -49,21 +57,22 @@ export const Starfield: React.FC = () => {
   }, []);
 
   return (
-    <group>
+    <group ref={skyRef} name="background-sky">
       {/* Real NASA Milky Way Celestial Sphere Skybox */}
-      <mesh>
+      <mesh renderOrder={-1000} frustumCulled={false}>
         <sphereGeometry args={[3200, 64, 64]} />
         <meshBasicMaterial
           map={galaxyTexture}
           side={THREE.BackSide}
-          transparent
-          opacity={0.65}
+          transparent={false}
+          color={new THREE.Color(0.65, 0.65, 0.65)}
           depthWrite={false}
+          depthTest={false}
         />
       </mesh>
 
       {/* Sparkling Stellar Points */}
-      <points>
+      <points renderOrder={-999} frustumCulled={false}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
@@ -81,9 +90,10 @@ export const Starfield: React.FC = () => {
         <pointsMaterial
           size={1.6}
           vertexColors
-          transparent
-          opacity={0.8}
+          transparent={false}
           sizeAttenuation={false}
+          depthWrite={false}
+          depthTest={false}
         />
       </points>
     </group>

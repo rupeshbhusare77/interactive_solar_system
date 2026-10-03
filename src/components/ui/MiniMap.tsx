@@ -270,4 +270,3 @@ export const MiniMap: React.FC = () => {
     </>
   );
 };
-

@@ -253,4 +253,3 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
     </section>
   );
 };
-

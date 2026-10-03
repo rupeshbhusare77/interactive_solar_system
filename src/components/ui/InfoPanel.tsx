@@ -589,4 +589,3 @@ export const InfoPanel: React.FC = () => {
     </aside>
   );
 };
-

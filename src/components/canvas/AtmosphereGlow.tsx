@@ -5,9 +5,8 @@
  * with authentic sunset transitions at the twilight terminator.
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
 
 interface AtmosphereGlowProps {
   radius: number;
@@ -26,11 +25,11 @@ void main() {
   vNormal = normalize(normalMatrix * normal);
   vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
   vPosition = mvPos.xyz;
-  
+
   vec4 worldPos = modelMatrix * vec4(position, 1.0);
   vWorldPosition = worldPos.xyz;
   vWorldNormal = normalize(mat3(modelMatrix) * normal);
-  
+
   gl_Position = projectionMatrix * mvPos;
 }
 `;
@@ -48,28 +47,30 @@ varying vec3 vWorldPosition;
 
 void main() {
   vec3 viewDir = normalize(-vPosition);
-  
+
   // 1. Fresnel limb scattering: brightest at glancing orbital limb
   float dotNV = max(dot(vNormal, viewDir), 0.0);
   float fresnel = pow(1.0 - dotNV, uPower);
-  
+
   // 2. Solar illumination: only illuminates the daylight hemisphere
   vec3 sunDir = normalize(uSunPosition - vWorldPosition);
   float sunDot = dot(vWorldNormal, sunDir);
-  
+
   // Day-to-night fade with soft twilight transition
   float sunFactor = smoothstep(-0.25, 0.4, sunDot);
   if (sunFactor <= 0.001) discard;
-  
+
   // 3. Twilight Rayleigh sunset reddening along the terminator
-  float sunset = smoothstep(0.25, -0.05, sunDot) * smoothstep(-0.25, 0.05, sunDot);
+  float sunset = (1.0 - smoothstep(-0.05, 0.25, sunDot)) * smoothstep(-0.25, 0.05, sunDot);
   vec3 twilightWarmth = vec3(1.0, 0.62, 0.32);
   vec3 finalColor = mix(uGlowColor, twilightWarmth, sunset * 0.48);
-  
+
   float alpha = fresnel * sunFactor * uIntensity;
   if (alpha <= 0.002) discard;
-  
+
   gl_FragColor = vec4(finalColor, alpha);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
 }
 `;
 
@@ -79,7 +80,6 @@ export const AtmosphereGlow: React.FC<AtmosphereGlowProps> = ({
   intensity = 1.25,
   power = 3.6,
 }) => {
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   const uniforms = useMemo(
     () => ({
@@ -91,17 +91,11 @@ export const AtmosphereGlow: React.FC<AtmosphereGlowProps> = ({
     [color, intensity, power]
   );
 
-  useFrame(() => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uSunPosition.value.set(0, 0, 0);
-    }
-  });
 
   return (
     <mesh>
       <sphereGeometry args={[radius * 1.018, 64, 64]} />
       <shaderMaterial
-        ref={materialRef}
         vertexShader={ATMOSPHERE_VERTEX_SHADER}
         fragmentShader={ATMOSPHERE_FRAGMENT_SHADER}
         uniforms={uniforms}

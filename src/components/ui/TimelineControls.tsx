@@ -431,4 +431,3 @@ export const TimelineControls: React.FC = () => {
     </div>
   );
 };
-

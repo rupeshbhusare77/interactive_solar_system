@@ -1,3 +1,4 @@
+import { useSceneFrame } from './useSceneFrame';
 /**
  * 3D Solar System Simulator — Real NASA Photosphere Sun Body Component
  * Features official NASA SDO solar imagery, pulsating corona prominences,
@@ -6,7 +7,7 @@
 
 import React, { useRef, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+
 import { Html } from '@react-three/drei';
 import { SUN } from '../../astronomy/celestialData';
 import { scaleRadius } from '../../astronomy/scaling';
@@ -30,7 +31,7 @@ export const SunBody: React.FC = () => {
   const isHovered = hoveredBodyId === 'sun';
 
   // Dynamic solar rotation and coronal pulsation
-  useFrame(({ clock, camera }, delta) => {
+  useSceneFrame(({ clock, camera }, delta) => {
     const time = clock.getElapsedTime();
 
     if (sunMeshRef.current) {

@@ -750,4 +750,3 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
     </header>
   );
 };
-
