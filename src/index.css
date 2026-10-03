@@ -86,7 +86,7 @@
 :root {
   --header-height: 56px;
   --timeline-height: 80px;
-  --dock-width: 10rem;
+  --dock-width: var(--preferred-dock-width, 10rem);
 }
 html, body, #root { width: 100%; height: 100%; user-select: auto; -webkit-user-select: auto; overflow: hidden; }
 button, summary, select { touch-action: manipulation; }
@@ -102,8 +102,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   align-items: center;
   justify-content: space-between;
   gap: .5rem;
-  padding: .5rem .8rem;
-  min-height: var(--header-height);
+  padding: calc(.5rem + env(safe-area-inset-top)) max(.8rem, env(safe-area-inset-right)) .5rem max(.8rem, env(safe-area-inset-left));
+  min-height: 56px;
 }
 .header-brand { flex: 0 0 auto; min-width: 0; }
 .header-controls { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: .5rem; min-width: 0; }
@@ -158,7 +158,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 
 .timeline-panel {
   position: absolute;
-  bottom: .5rem;
+  bottom: max(.5rem, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   width: min(56rem, calc(100% - 1rem));
@@ -167,7 +167,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .timeline-details > summary { width: max-content; }
 .timeline-disclosure { position: relative; }
 .timeline-popover {
-  position: absolute;
+  position: fixed;
   bottom: calc(100% + .5rem);
   right: 0;
   z-index: 2;
@@ -189,7 +189,6 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 
 /* Tablet & Moderate Screen Adaptations (768px - 1024px) */
 @media (min-width: 768px) and (max-width: 1024px) {
-  :root { --dock-width: 3.25rem; }
   .info-panel { width: min(20rem, 36vw); }
 }
 
@@ -258,7 +257,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
     max-height: min(72dvh, calc(100dvh - var(--header-height) - var(--timeline-height) - 1rem));
     z-index: 30;
   }
-  .info-panel[data-expanded="false"] .panel-body {
+  .info-panel[data-expanded="false"] .panel-body,
+  .info-panel[data-expanded="false"] [role="tablist"] {
     display: none;
   }
   .panel-expand {
@@ -270,8 +270,8 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
     left: .5rem;
     right: .5rem;
     width: auto;
-    top: calc(var(--header-height) + 2.75rem);
-    max-height: min(50dvh, 320px);
+    top: calc(var(--header-height) + .5rem);
+    max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - 1.5rem);
     z-index: 35;
   }
 
@@ -288,12 +288,12 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   }
 
   .timeline-main { justify-content: flex-start; }
-  .timeline-main time { flex-basis: 100%; }
+  .timeline-main > div:first-child { flex-basis: 100%; }
   .timeline-popover { position: fixed; left: .5rem; right: .5rem; bottom: calc(100% + .5rem); width: auto; }
 }
 
 /* Landscape Phones & Shorter Displays */
-@media (max-height: 520px) {
+@media (min-width: 768px) and (max-height: 520px) {
   :root {
     --header-height: 44px;
     --timeline-height: 56px;
@@ -310,12 +310,13 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
     display: flex;
   }
   .info-panel {
-    max-height: calc(100dvh - var(--header-height) - .5rem);
+    max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - 1.25rem);
     top: calc(var(--header-height) + .25rem);
-    bottom: .5rem;
+    bottom: auto;
     width: min(20rem, 45vw);
   }
-  .info-panel[data-expanded="false"] .panel-body {
+  .info-panel[data-expanded="false"] .panel-body,
+  .info-panel[data-expanded="false"] [role="tablist"] {
     display: none;
   }
   .panel-expand {
@@ -325,4 +326,105 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Keep measured panel heights as offsets, never as inputs to their own size. */
+.mobile-settings {
+  position: absolute;
+  top: calc(100% + .5rem);
+  left: .5rem;
+  right: .5rem;
+  max-height: calc(100dvh - var(--header-height) - 1rem - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.header-search-popup {
+  max-height: min(18rem, calc(100dvh - var(--header-height) - 1rem));
+}
+.header-actions > div > [role="group"],
+.header-actions > div > [role="menu"] {
+  max-height: calc(100dvh - var(--header-height) - 1rem);
+  overflow-y: auto;
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+  .app-header { flex-wrap: wrap; }
+  .header-brand { order: 1; }
+  .header-actions { order: 2; margin-left: auto; }
+  .header-controls { order: 3; flex-basis: 100%; }
+  .header-search { flex: 1; }
+}
+@media (max-width: 767px) {
+  .app-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .35rem;
+    padding: calc(.4rem + env(safe-area-inset-top)) max(.5rem, env(safe-area-inset-right)) .4rem max(.5rem, env(safe-area-inset-left));
+  }
+  .header-brand, .header-actions, .header-controls { margin: 0; }
+  .header-actions { justify-content: flex-end; gap: .3rem; }
+  .header-actions button { min-height: 40px; min-width: 40px; justify-content: center; }
+  .header-controls input { font-size: 16px; min-height: 40px; }
+  .header-search { min-width: 0; }
+  .mobile-settings button { min-height: 40px; }
+  .quick-dock { bottom: calc(var(--timeline-height) + 1rem + env(safe-area-inset-bottom)); }
+  .quick-dock .dock-body-list { overflow-x: auto; overflow-y: hidden; }
+  .quick-dock button { min-height: 36px; }
+  .mobile-radar-trigger {
+    top: calc(var(--header-height) + .5rem);
+    bottom: auto;
+    min-height: 40px;
+    min-width: 40px;
+  }
+  .radar-panel {
+    top: calc(var(--header-height) + 3.5rem);
+    bottom: auto;
+    max-height: calc(100dvh - var(--header-height) - 4rem);
+    overflow-y: auto;
+  }
+  .timeline-panel { padding: .5rem; }
+  .timeline-main { gap: .35rem; }
+  .timeline-main > div { min-width: 0; max-width: 100%; }
+  .timeline-main > div:first-child { flex-wrap: wrap; gap: .3rem; }
+  .simulation-time { font-size: 10px; letter-spacing: 0; }
+  .timeline-main button { min-height: 36px; min-width: 32px; justify-content: center; }
+  .timeline-popover { max-height: calc(100dvh - var(--timeline-height) - 1.5rem); }
+  .info-panel { bottom: calc(var(--timeline-height) + 1rem + env(safe-area-inset-bottom)); }
+  .info-panel > :not(.panel-body) { flex-shrink: 0; }
+}
+@media (min-width: 600px) and (max-width: 767px) {
+  .app-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .header-controls { grid-column: 1 / -1; }
+}
+@media (max-width: 767px) and (max-height: 520px) {
+  .header-brand { display: none; }
+  .app-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .header-controls { order: 1; grid-column: auto; }
+  .header-actions { order: 2; }
+  .header-actions button { min-width: 32px; padding-inline: .3rem; }
+  .timeline-main > div:first-child { flex-basis: auto; }
+  .timeline-panel { max-height: 40dvh; overflow-y: auto; }
+  .timeline-panel:has(.timeline-popover) { overflow: visible; }
+  .radar-panel { top: calc(var(--header-height) + .5rem); bottom: auto; max-height: calc(100dvh - var(--header-height) - .75rem); }
+}
+
+@media (max-width: 767px) {
+  .header-actions > div { position: static; }
+  .header-layers-popup { top: calc(100% + .5rem); right: .5rem; margin-top: 0; max-width: calc(100vw - 1rem); }
+  .info-panel h2 { overflow-wrap: anywhere; }
+  .info-panel [role="tablist"] { overflow-x: auto; }
+}
+@media (max-height: 520px) {
+  .mobile-radar-trigger { display: inline-flex; top: calc(var(--header-height) + .5rem); bottom: auto; }
+  .radar-panel { top: calc(var(--header-height) + 3.5rem); bottom: auto; max-height: calc(100dvh - var(--header-height) - 4rem); overflow-y: auto; }
+  .radar-close { display: inline-flex; }
+}
+@media (max-width: 767px) and (max-height: 520px) {
+  .info-panel { left: auto; width: min(20rem, 48vw); }
+}
+
+@media (min-width: 768px) and (max-height: 520px) {
+  .quick-dock .dock-category-tabs,
+  .quick-dock .dock-body-list button > span { display: none; }
+  .quick-dock .dock-body-list button { justify-content: center; padding-inline: .25rem; }
+  .mobile-radar-trigger, .radar-panel { left: calc(var(--dock-width) + 1.25rem); }
 }

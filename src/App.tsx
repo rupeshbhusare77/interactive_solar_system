@@ -39,7 +39,8 @@ const AppContent: React.FC = () => {
         href="https://www.eso.org/public/images/eso0932a/"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute right-3 top-16 z-10 rounded bg-black/70 px-2 py-1 text-[10px] text-slate-300 hover:text-white"
+        style={{ top: 'calc(var(--header-height) + .5rem)' }}
+        className="absolute right-3 z-10 rounded bg-black/70 px-2 py-1 text-[10px] text-slate-300 hover:text-white"
         title="Photographic sky: ESO/S. Brunier, CC BY 4.0. Display brightness reduced; orientation is illustrative."
       >
         Sky: ESO/S. Brunier
