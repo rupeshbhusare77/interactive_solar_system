@@ -48,6 +48,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const surfaceMeshRef = useRef<THREE.Mesh>(null);
   const surfaceSpinRef = useRef<THREE.Group>(null);
   const cloudsMeshRef = useRef<THREE.Mesh>(null);
+  const reticleRef = useRef<THREE.Group>(null);
 
   // Pass body.id so educational radius calibration is applied
   const radius = scaleRadius(body.physical.radiusKm, body.type, scaleMode, body.id);
@@ -111,7 +112,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
   const isHovered = hoveredBodyId === body.id;
 
   // Real-time orbital mechanics update
-  useSceneFrame(() => {
+  useSceneFrame(({ camera }) => {
     if (!body.orbitalElements || !planetGroupRef.current) return;
 
     const ephemeris = getBodyEphemeris(body.id);
@@ -129,6 +130,11 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
     if (cloudsMeshRef.current) {
       const cloudSpeed = THREE.MathUtils.degToRad(ephemeris.rotationAngleDeg * 1.09);
       cloudsMeshRef.current.rotation.y = cloudSpeed;
+    }
+
+    // Align target HUD reticle perpendicular to camera sight line
+    if (reticleRef.current) {
+      reticleRef.current.quaternion.copy(camera.quaternion);
     }
   });
 
@@ -176,13 +182,13 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             onUpdate={restoreDataTextureRoles}
             map={texture}
             color="#ffffff"
+            normalMap={normalMap || undefined}
+            normalScale={normalMap ? new THREE.Vector2(0.35, 0.35) : undefined}
             bumpMap={bumpMap || undefined}
             bumpScale={bumpMap ? radius * 0.025 : 0}
-            normalMap={normalMap || undefined}
-            normalScale={new THREE.Vector2(0.6, 0.6)}
             roughnessMap={roughnessMap || undefined}
-            roughness={body.id === 'earth' ? 1 : 0.78}
-            metalness={0.04}
+            roughness={body.id === 'earth' ? 1 : ['gas-giant', 'ice-giant'].includes(body.textureType) ? 0.65 : 0.85}
+            metalness={0.02}
             emissive={new THREE.Color(0x000000)}
             emissiveIntensity={0}
           />
@@ -211,13 +217,14 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         {/* Earth Atmospheric Cloud Deck */}
         {body.hasClouds && cloudsTexture && (
           <mesh ref={cloudsMeshRef}>
-            <sphereGeometry args={[radius * 1.022, 64, 64]} />
+            <sphereGeometry args={[radius * 1.01, 64, 64]} />
             <meshStandardMaterial
               map={cloudsTexture}
               transparent
-              opacity={0.8}
+              opacity={0.65}
               blending={THREE.NormalBlending}
               depthWrite={false}
+              roughness={1.0}
             />
           </mesh>
         )}
@@ -227,8 +234,8 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           <AtmosphereGlow
             radius={radius}
             color={body.atmosphereColor}
-            intensity={body.id === 'earth' ? 1.4 : body.id === 'venus' ? 1.3 : 1.1}
-            power={body.id === 'earth' ? 2.5 : 2.2}
+            intensity={body.id === 'earth' ? 1.25 : body.id === 'venus' ? 1.15 : 1.05}
+            power={body.id === 'earth' ? 3.6 : 3.0}
           />
         )}
 
@@ -258,17 +265,19 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           />
         ))}
 
-      {/* Selection Ring */}
+      {/* Camera-Facing Target HUD Indicator */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.35, radius * 1.45, 64]} />
-          <meshBasicMaterial
-            color="#38bdf8"
-            side={THREE.DoubleSide}
-            transparent
-            opacity={0.85}
-          />
-        </mesh>
+        <group ref={reticleRef}>
+          <mesh>
+            <ringGeometry args={[radius * 1.25, radius * 1.28, 64]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.35}
+            />
+          </mesh>
+        </group>
       )}
 
       {/* Contextual Planet Label */}
@@ -281,13 +290,17 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
         >
           <div className="flex flex-col items-center">
             <span
-              className={`px-2 py-0.5 rounded text-xs font-semibold tracking-wide transition-all shadow-lg ${
+              className={`px-2 py-0.5 rounded text-xs font-semibold tracking-wide transition-all shadow-lg flex items-center gap-1.5 ${
                 isSelected
                   ? 'bg-sky-500 text-black shadow-glow-cyan font-bold ring-1 ring-white'
                   : 'bg-black/80 text-white border border-white/20'
               }`}
             >
-              {body.name}
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: body.physical.color }}
+              />
+              <span>{body.name}</span>
             </span>
           </div>
         </Html>

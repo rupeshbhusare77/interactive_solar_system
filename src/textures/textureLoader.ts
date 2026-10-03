@@ -126,7 +126,7 @@ export function loadEarthRoughnessMap(): THREE.Texture {
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
     for (let index = 0; index < pixels.data.length; index += 4) {
       // Bright specular ocean pixels become smooth; dark land pixels remain rough.
-      const roughness = Math.round(230 - pixels.data[index + 1] * 0.75);
+      const roughness = Math.round(230 - pixels.data[index + 1] * (210 / 255));
       pixels.data[index] = pixels.data[index + 1] = pixels.data[index + 2] = roughness;
     }
     context.putImageData(pixels, 0, 0);

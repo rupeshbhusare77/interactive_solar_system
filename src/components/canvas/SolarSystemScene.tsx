@@ -126,7 +126,7 @@ export const SolarSystemScene: React.FC = () => {
           </Canvas>
         </SceneErrorBoundary>
       )}
-      <div style={{ position: 'absolute', top: 'calc(var(--header-height) + .5rem)', left: '.75rem',
+      <div style={{ position: 'absolute', top: 'calc(var(--header-height) + .5rem)', left: '50%', transform: 'translateX(-50%)',
         zIndex: 15, maxWidth: 'min(25rem, calc(100% - 1.5rem))' }}>
         {(cameraMode === 'top' || cameraMode === 'ecliptic') && (
           <label className="glass-panel rounded p-2 text-xs inline-flex items-center gap-2" style={{ maxWidth: '100%' }}>

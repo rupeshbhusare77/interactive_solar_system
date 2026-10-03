@@ -71,8 +71,10 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
     return [1.0, 1.0, 1.0];
   }, [moon.id]);
 
+  const reticleRef = useRef<THREE.Group>(null);
+
   // Calculate current moon position relative to parent planet
-  useSceneFrame(() => {
+  useSceneFrame(({ camera }) => {
     if (!moon.moonOrbitalElements || !moonGroupRef.current) return;
 
     const scaledOffset = getBodyPosition(moon.id,scaleMode)?.displayOffset;
@@ -85,6 +87,10 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
       const rotSpeed = 24 / Math.abs(moon.physical.rotationPeriodHours);
       moonMeshRef.current.quaternion.copy(spinPole);
       moonMeshRef.current.rotateY(getDaysSinceJ2000(getSimulationDate()) * rotSpeed * Math.PI * 2);
+    }
+
+    if (reticleRef.current) {
+      reticleRef.current.quaternion.copy(camera.quaternion);
     }
   });
 
@@ -115,7 +121,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
           map={texture}
           color="#ffffff"
           bumpMap={bumpMap || undefined}
-          bumpScale={bumpMap ? 0.035 : 0}
+          bumpScale={bumpMap ? radius * 0.025 : 0}
           roughness={moon.id === 'enceladus' ? 0.2 : 0.88}
           metalness={0.04}
         />
@@ -126,17 +132,24 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
         <AtmosphereGlow
           radius={radius}
           color={moon.atmosphereColor}
-          intensity={1.5}
-          power={2.0}
+          intensity={1.25}
+          power={3.2}
         />
       )}
 
-      {/* Selection indicator */}
+      {/* Camera-Facing Target HUD Indicator */}
       {isSelected && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[radius * 1.35, radius * 1.45, 32]} />
-          <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} />
-        </mesh>
+        <group ref={reticleRef}>
+          <mesh>
+            <ringGeometry args={[radius * 1.3, radius * 1.34, 32]} />
+            <meshBasicMaterial
+              color="#38bdf8"
+              side={THREE.DoubleSide}
+              transparent
+              opacity={0.4}
+            />
+          </mesh>
+        </group>
       )}
 
       {/* Contextual Label */}
