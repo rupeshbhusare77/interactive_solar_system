@@ -2,6 +2,8 @@
 
 A browser-based 3D solar system simulator built with React, TypeScript, and Three.js. Explore celestial bodies, control simulation time, compare display scales, and inspect orbital and physical properties through an interactive space-themed interface.
 
+![Paused inner-system overview at October 3, 2026 UTC](docs/images/overview.png)
+
 ## Features
 
 - Explore the Sun, eight planets, five dwarf planets, 15 moons, and three comets.
@@ -22,7 +24,7 @@ A browser-based 3D solar system simulator built with React, TypeScript, and Thre
 | --- | --- |
 | Application | React 18, TypeScript |
 | 3D rendering | Three.js, React Three Fiber, Drei |
-| Styling | Tailwind CSS, PostCSS, Autoprefixer |
+| Styling | Tailwind CSS 4, PostCSS |
 | Icons | Lucide React |
 | Development and builds | Vite |
 
@@ -30,7 +32,7 @@ The application runs in the browser without a backend or database. Simulation st
 
 ## Getting started
 
-You need Node.js and npm, plus a browser with WebGL support. Node.js 24 was used for the project's initial build verification.
+You need Node.js 24 LTS and npm, plus a modern browser with WebGL 2. Use the version in .nvmrc. Styling requires Chrome 111+, Safari 16.4+, or Firefox 128+.
 
 ```bash
 git clone https://github.com/rupeshbhusare77/interactive_solar_system.git
@@ -98,7 +100,7 @@ serve.js                 Optional local server for the production build
 
 ## Verification
 
-Run `npm run build` to check TypeScript and production bundling. Browser verification is needed for visual and interaction changes. Automated test files and their runner were removed at the project owner's request.
+Run `npm run build` to check TypeScript and production bundling. Browser verification is needed for visual and interaction changes. A minimal regression suite was restored with the owner's approval for Stage 4. Run npm test for astronomy and static-server checks. Browser regressions run against a fixed UTC date, paused clock, and seeded generated assets.
 
 ## Scientific scope and known limitations
 
@@ -125,10 +127,41 @@ These comparisons were recorded during Stage 1 verification. The test fixtures a
 
 - Moon rendering, camera tracking, measurements, and information-panel distances use shared parent-relative positions. Their numerical consistency does not establish observed phase accuracy for illustrative satellite records.
 - Educational and hybrid scales deliberately change visual proportions and spacing. Numerical measurements use physical coordinates before display scaling.
-- The measurement line can remain visible when the measurement panel is closed.
-- Some texture-load failure paths replace cached textures without updating references already held by materials.
+- The measurement line mounts only while the measurement panel is open.
+- Missing texture maps recover in place with procedural or neutral replacements. Loading and fallback status are visible; failed graphics contexts offer a scene retry.
 - Stars, procedural textures, and belt particles use random generation, so their appearance can vary between sessions.
 
 ## Repository contents
 
 Keep application source, `public/` assets, configuration files, `package.json`, and `package-lock.json` in version control. The `.gitignore` excludes installed dependencies, generated builds, coverage, environment files, logs, personal editor settings, and the local project context file. Sanitized `.env.example` files can be tracked if environment configuration is introduced later.
+
+## First exploration
+
+Pause the timeline, search for Earth, and select Focus Camera. Switch between educational and real scale to compare visible proportions. Open Measure and choose Earth ⇄ Moon to inspect physical distance independently of display scale. Top View and Ecliptic expose an inner/outer/full region selector. On phones, camera and scale settings are in the settings drawer.
+
+## Release validation
+
+```bash
+npm ci
+npm run check
+npm audit --audit-level=high
+npx playwright install chromium
+npm run build -- --base=/interactive_solar_system/
+npm run test:browser
+```
+
+The screenshot above was captured from the production build at 1280 × 720, paused at October 3, 2026 UTC with seeded generated assets.
+
+The browser suite serves the production build under /interactive_solar_system/ and covers desktop/mobile keyboard search, lunar measurement, guide dismissal, camera regions, and failed-map recovery. CI runs the same checks and uploads dist as a reviewable artifact. Remote CI results require the owner's later push. If the browser download is unavailable, installed Edge can be used locally by setting PLAYWRIGHT_CHANNEL=msedge; CI uses Chromium.
+
+For a root-hosted site, use npm run build without --base. For another subfolder, pass its leading/trailing-slash path through --base. Texture URLs follow Vite's build base. The optional server accepts PORT and BASE_PATH environment variables and binds only to 127.0.0.1. It rejects traversal, sends real asset 404s, revalidates unhashed files, and caches hashed build assets immutably. It is a local preview, not a production hosting service.
+
+Hosting remains undecided. GitHub Pages is one option, but private repositories require a qualifying paid plan, and ordinary Pages sites can be publicly accessible even when source is private. No Pages settings or deployment were enabled. See [GitHub's Pages requirements](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site) before choosing that target.
+
+## Attribution and contribution
+
+[Asset provenance](docs/ASSET_SOURCES.md) lists the local texture files and their verified status. Original image authors, redistribution terms, and download URLs have not been recovered. Existing NASA wording in historical comments is not proof of provenance. Resolve those entries before a public release. No project license has been selected; do not assume permission to redistribute assets.
+
+For contributions, use Node.js 24, install with npm ci, keep changes focused, and run the release checks above. Include a paused UTC date and viewport dimensions when reporting visual defects. Preserve physical calculations separately from illustrative display scaling.
+
+Before release: confirm image redistribution rights, select a project license, choose hosting, review the build artifact, and run CI after the owner commits and pushes. Publish only after those owner decisions. No live-demo URL is claimed.
