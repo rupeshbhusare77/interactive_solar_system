@@ -165,12 +165,15 @@ Use these settings in **Settings → Builds**:
 | Setting | Value |
 | --- | --- |
 | Build command | `npm run build` |
-| Deploy command | `npx wrangler deploy` |
+| Production deploy command | `npx wrangler deploy` |
+| Preview deploy command | `npx wrangler preview` |
 | Root directory | `/` |
 | Production branch | `main`, after the desired changes and `wrangler.json` have been merged and pushed there |
 | Build variable | `NODE_VERSION=24` |
 
 Commit, merge, and push changes yourself. Cloudflare deploys the selected branch; uncommitted local files are not included. Keep the Worker URL enabled and leave Access authentication disabled for a public website. After the deployment succeeds, use **Visit** to verify the application. No Worker script, backend, or application secret is required.
+
+`wrangler.json` includes an empty `previews` block required by the preview command. Preview builds use the same static assets and compatibility settings as production.
 
 For a local configuration check without publishing, build first and run `npx wrangler deploy --dry-run`. The following Pages instructions are an alternative hosting setup, not settings for this Worker project.
 
