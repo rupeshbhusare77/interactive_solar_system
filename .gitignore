@@ -30,3 +30,10 @@ Desktop.ini
 /docs/STAGE2_CLOCK_NOTES.md
 /docs/STAGE2_PROGRESS.md
 /docs/STAGE3_PROGRESS.md
+
+# Local release verification output.
+/test-results/
+/playwright-report/
+/docs/STAGE4_PROGRESS.md
+
+/docs/REALISM_PROGRESS.md

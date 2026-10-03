@@ -32,6 +32,7 @@ const SCALE_OPTIONS: { value: ScaleMode; label: string; desc: string }[] = [
 ];
 
 const CAMERA_OPTIONS: { value: CameraMode; label: string; desc: string }[] = [
+  { value: 'system', label: 'Moon System', desc: 'Frame the selected planet and inner moons' },
   { value: 'free', label: 'Free Orbit', desc: 'Manual orbit, pan & zoom' },
   { value: 'focus', label: 'Focus', desc: 'Smooth flight to target' },
   { value: 'follow', label: 'Lock & Follow', desc: 'Track orbital movement' },
@@ -111,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
   const filteredBodies = query
     ? CELESTIAL_BODIES.filter(
         (body) =>
-          body.name.toLowerCase().includes(query) ||
+          body.name.toLowerCase().replace(/[^a-z0-9]/g,'').includes(query.replace(/[^a-z0-9]/g,'')) ||
           body.type.toLowerCase().includes(query)
       ).slice(0, 10)
     : [];

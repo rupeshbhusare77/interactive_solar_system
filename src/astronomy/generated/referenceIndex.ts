@@ -1,0 +1,2 @@
+// Generated reference IDs.
+export const REFERENCE_IDS = ["mercury","venus","earth","mars","jupiter","saturn","uranus","neptune","pluto","moon","phobos","deimos","io","europa","ganymede","callisto","mimas","enceladus","tethys","dione","rhea","titan","hyperion","iapetus","phoebe","janus","epimetheus","atlas","prometheus","pandora","pan","ariel","umbriel","titania","oberon","miranda","triton","proteus","nereid","charon","styx","nix","kerberos","hydra"];

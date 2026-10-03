@@ -30,6 +30,7 @@ interface RingShadowOnPlanetProps {
   planetVisualRadius: number;
   ringDensity: THREE.Texture;
   spinGroupRef: React.RefObject<THREE.Group>;
+  geometryScale: [number, number, number];
 }
 
 const RING_VERTEX_SHADER = `
@@ -98,19 +99,20 @@ void main() {
   float cosPhase = dot(sunDir, viewDir);
 
   // Back-scatter (reflection toward Sun): illuminates dense B-ring
-  float backScatter = pow(max(0.0, -cosPhase), 2.5) * 0.52;
+  float backScatter = pow(max(0.0, cosPhase), 2.5) * 0.25;
 
   // Forward-scatter (transmission through icy particles): illuminates C-ring & Cassini division
-  float forwardScatter = pow(max(0.0, cosPhase), 3.5) * 0.68;
+  float forwardScatter = pow(max(0.0, -cosPhase), 3.5) * 0.4;
 
   // Total lighting intensity
-  float lighting = 0.20 + 0.80 * nDotL + backScatter + forwardScatter * (1.0 - density * 0.45);
+  float lighting = 0.12 + 0.8 * sqrt(nDotL) + backScatter + forwardScatter * (1.0 - density * 0.45);
 
   // Apply dark planet shadow (shadowed side retains a faint 3% ambient space illumination)
   lighting = mix(0.03, lighting, shadowFactor);
 
   vec3 finalColor = texColor.rgb * uRingColor * lighting;
-  float finalAlpha = density * uOpacity;
+  float pathOpacity = 1.0 - pow(1.0 - density, 1.0 / max(abs(dot(vNormal, viewDir)), 0.15));
+  float finalAlpha = pathOpacity * uOpacity;
 
   gl_FragColor = vec4(finalColor, finalAlpha);
   #include <tonemapping_fragment>
@@ -119,12 +121,13 @@ void main() {
 `;
 
 const PLANET_SHADOW_VERTEX = `
+uniform vec3 uShapeScale;
 varying vec3 vLocalPosition;
 varying vec3 vWorldNormal;
 varying vec3 vWorldPosition;
 
 void main() {
-  vLocalPosition = position;
+  vLocalPosition = position * uShapeScale;
   vec4 worldPos = modelMatrix * vec4(position, 1.0);
   vWorldPosition = worldPos.xyz;
   vWorldNormal = normalize(mat3(modelMatrix) * normal);
@@ -248,18 +251,20 @@ export const RingShadowOnPlanet: React.FC<RingShadowOnPlanetProps> = ({
   planetVisualRadius,
   ringDensity,
   spinGroupRef,
+  geometryScale,
 }) => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   const uniforms = useMemo(
     () => ({
       uRingDensity: { value: ringDensity },
+      uShapeScale: { value: new THREE.Vector3(...geometryScale) },
       uLocalSunDir: { value: new THREE.Vector3(0, 0.4, 0.9).normalize() },
       uSunPosition: { value: new THREE.Vector3(0, 0, 0) },
       uInnerRadius: { value: innerRadius },
       uOuterRadius: { value: outerRadius },
     }),
-    [ringDensity, innerRadius, outerRadius]
+    [ringDensity, innerRadius, outerRadius, geometryScale]
   );
 
   useSceneFrame(() => {
@@ -281,7 +286,7 @@ export const RingShadowOnPlanet: React.FC<RingShadowOnPlanetProps> = ({
   });
 
   return (
-    <mesh>
+    <mesh scale={geometryScale}>
       <sphereGeometry args={[planetVisualRadius * 1.002, 64, 64]} />
       <shaderMaterial
         ref={materialRef}

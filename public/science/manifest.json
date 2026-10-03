@@ -1,0 +1,235 @@
+{
+  "source": "https://ssd.jpl.nasa.gov/horizons/",
+  "verifiedOn": "2026-10-03",
+  "start": "2026-10-01T00:00:00Z",
+  "stop": "2026-10-09T00:00:00Z",
+  "frame": "J2000 ecliptic; geometric, no light-time correction; UT input",
+  "bodies": [
+    {
+      "id": "mercury",
+      "maxErrorKm": 0.005662793309108285,
+      "samples": 33
+    },
+    {
+      "id": "venus",
+      "maxErrorKm": 0.0006524528962764356,
+      "samples": 33
+    },
+    {
+      "id": "earth",
+      "maxErrorKm": 0.00028476050605729465,
+      "samples": 33
+    },
+    {
+      "id": "mars",
+      "maxErrorKm": 0.00017298777092215786,
+      "samples": 33
+    },
+    {
+      "id": "jupiter",
+      "maxErrorKm": 0.03430982228735066,
+      "samples": 33
+    },
+    {
+      "id": "saturn",
+      "maxErrorKm": 0.0009221572177246007,
+      "samples": 33
+    },
+    {
+      "id": "uranus",
+      "maxErrorKm": 0.008132267225569447,
+      "samples": 33
+    },
+    {
+      "id": "neptune",
+      "maxErrorKm": 0.0038847800965592055,
+      "samples": 33
+    },
+    {
+      "id": "pluto",
+      "maxErrorKm": 0.020310354450717598,
+      "samples": 33
+    },
+    {
+      "id": "moon",
+      "maxErrorKm": 0.01469085146809016,
+      "samples": 33
+    },
+    {
+      "id": "phobos",
+      "maxErrorKm": 0.037033581399228035,
+      "samples": 823
+    },
+    {
+      "id": "deimos",
+      "maxErrorKm": 0.08589597851353857,
+      "samples": 206
+    },
+    {
+      "id": "io",
+      "maxErrorKm": 1.554697629841043,
+      "samples": 148
+    },
+    {
+      "id": "europa",
+      "maxErrorKm": 2.6693972876625423,
+      "samples": 73
+    },
+    {
+      "id": "ganymede",
+      "maxErrorKm": 4.246690272046515,
+      "samples": 36
+    },
+    {
+      "id": "callisto",
+      "maxErrorKm": 0.43944017963894266,
+      "samples": 33
+    },
+    {
+      "id": "mimas",
+      "maxErrorKm": 0.8080188359234852,
+      "samples": 275
+    },
+    {
+      "id": "enceladus",
+      "maxErrorKm": 0.8569800447485098,
+      "samples": 193
+    },
+    {
+      "id": "tethys",
+      "maxErrorKm": 1.0911416191187497,
+      "samples": 138
+    },
+    {
+      "id": "dione",
+      "maxErrorKm": 1.4308594612325083,
+      "samples": 95
+    },
+    {
+      "id": "rhea",
+      "maxErrorKm": 2.0052766979562686,
+      "samples": 58
+    },
+    {
+      "id": "titan",
+      "maxErrorKm": 0.3591352067038654,
+      "samples": 33
+    },
+    {
+      "id": "hyperion",
+      "maxErrorKm": 0.23951305057389893,
+      "samples": 33
+    },
+    {
+      "id": "iapetus",
+      "maxErrorKm": 0.002196472896244802,
+      "samples": 33
+    },
+    {
+      "id": "phoebe",
+      "maxErrorKm": 0.0009273610564132718,
+      "samples": 33
+    },
+    {
+      "id": "janus",
+      "maxErrorKm": 0.5249502327105555,
+      "samples": 385
+    },
+    {
+      "id": "epimetheus",
+      "maxErrorKm": 0.5370320169597731,
+      "samples": 385
+    },
+    {
+      "id": "atlas",
+      "maxErrorKm": 0.4575595359054524,
+      "samples": 444
+    },
+    {
+      "id": "prometheus",
+      "maxErrorKm": 0.43322858769269407,
+      "samples": 444
+    },
+    {
+      "id": "pandora",
+      "maxErrorKm": 0.5447044782371185,
+      "samples": 412
+    },
+    {
+      "id": "pan",
+      "maxErrorKm": 0.38241067150568875,
+      "samples": 481
+    },
+    {
+      "id": "ariel",
+      "maxErrorKm": 0.7050073690938182,
+      "samples": 103
+    },
+    {
+      "id": "umbriel",
+      "maxErrorKm": 1.0469981691813757,
+      "samples": 62
+    },
+    {
+      "id": "titania",
+      "maxErrorKm": 1.2288311801913059,
+      "samples": 33
+    },
+    {
+      "id": "oberon",
+      "maxErrorKm": 0.28490395041972666,
+      "samples": 33
+    },
+    {
+      "id": "miranda",
+      "maxErrorKm": 0.45884445729756707,
+      "samples": 186
+    },
+    {
+      "id": "triton",
+      "maxErrorKm": 1.364708981660211,
+      "samples": 44
+    },
+    {
+      "id": "proteus",
+      "maxErrorKm": 0.43893878286625554,
+      "samples": 231
+    },
+    {
+      "id": "nereid",
+      "maxErrorKm": 0.0038836614137813794,
+      "samples": 33
+    },
+    {
+      "id": "charon",
+      "maxErrorKm": 0.07440441039289467,
+      "samples": 41
+    },
+    {
+      "id": "styx",
+      "maxErrorKm": 0.03474204707160665,
+      "samples": 33
+    },
+    {
+      "id": "nix",
+      "maxErrorKm": 0.027655796195368523,
+      "samples": 33
+    },
+    {
+      "id": "kerberos",
+      "maxErrorKm": 0.024058574683684962,
+      "samples": 33
+    },
+    {
+      "id": "hydra",
+      "maxErrorKm": 0.02274952846797389,
+      "samples": 33
+    }
+  ],
+  "failures": [
+    {
+      "id": "daphnis",
+      "error": "No ephemeris for target \"Daphnis\" after A.D. 2018-JAN-16 23:58:50.8156 UT"
+    }
+  ]
+}

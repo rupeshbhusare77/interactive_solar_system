@@ -4,7 +4,8 @@ import { guardSceneRenderer } from './useSceneFrame';
  */
 import React, { Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
+import { subscribeReferenceChanges } from '../../astronomy/referenceEphemeris';
 import { Starfield } from './Starfield';
 import { SunBody } from './SunBody';
 import { PlanetBody } from './PlanetBody';
@@ -19,6 +20,12 @@ import { PLANETS, DWARF_PLANETS, COMETS } from '../../astronomy/celestialData';
 import { ViewRegion } from '../../astronomy/viewBounds';
 import { useSimulation } from '../../state/simulationContext';
 import { getTextureStatus, subscribeTextureStatus, retainTextureCache } from '../../textures/textureLoader';
+
+function ReferenceUpdates() {
+  const invalidate = useThree(state => state.invalidate);
+  useEffect(() => subscribeReferenceChanges(invalidate), [invalidate]);
+  return null;
+}
 
 function canUseWebGL(): boolean {
   try {
@@ -61,7 +68,7 @@ class SceneErrorBoundary extends React.Component<
 
 
 export const SolarSystemScene: React.FC = () => {
-  const { selectBody, viewToggles, isMeasurementOpen, cameraMode } = useSimulation();
+  const { selectBody, viewToggles, isMeasurementOpen, cameraMode, isPlaying } = useSimulation();
   const [region, setRegion] = useState<ViewRegion>('outer');
   const [supported, setSupported] = useState(canUseWebGL);
   const [attempt, setAttempt] = useState(0);
@@ -95,6 +102,7 @@ export const SolarSystemScene: React.FC = () => {
     setAttempt(value => value + 1);
   };
   const bodies = [...PLANETS, ...DWARF_PLANETS];
+  const comets = COMETS;
 
   return (
     <div className="w-full h-full relative cursor-grab active:cursor-grabbing">
@@ -102,20 +110,23 @@ export const SolarSystemScene: React.FC = () => {
         message={failure ?? 'This browser could not create a WebGL 2 graphics context.'} retry={retry} /> : (
         <SceneErrorBoundary key={attempt} retry={retry}>
           <Canvas ref={canvasRef}
+            frameloop={isPlaying ? 'always' : 'demand'}
             camera={{ position: [0, 85, 120], fov: 45, near: 0.01, far: 150000 }}
+            dpr={[1, 2]}
             gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-            onCreated={({ gl }) => { guardSceneRenderer(gl); setReady(true); }}
+            onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1; guardSceneRenderer(gl); setReady(true); }}
             onPointerMissed={() => selectBody(null)}
             >
             <Suspense fallback={null}>
               <color attach="background" args={['#020408']} />
+              <ReferenceUpdates />
               <Starfield />
-              <ambientLight intensity={viewToggles.showLighting ? 0.08 : 0.4} color="#e0f2fe" />
+              <ambientLight intensity={viewToggles.showLighting ? 0.035 : 1.5} color="#ffffff" />
               <SunBody />
               <HabitableZone />
               {[...bodies, ...COMETS].map(body => <OrbitPath key={body.id} body={body} />)}
               {bodies.map(body => <PlanetBody key={body.id} body={body} />)}
-              {COMETS.map(comet => <CometBody key={comet.id} comet={comet} />)}
+              {comets.map(comet => <CometBody key={comet.id} comet={comet} />)}
               <AsteroidBelt />
               <KuiperBelt />
               {isMeasurementOpen && <MeasurementLine />}

@@ -99,6 +99,8 @@ export function scalePosition(posAU: Vector3D, mode: ScaleMode): Vector3D {
  * Scale the visual radius of a celestial body (km -> Three.js world radius)
  */
 export function scaleRadius(radiusKm: number, type: string, mode: ScaleMode, id?: string): number {
+  // Unknown sizes use a navigation marker, never a physical radius measurement.
+  if (!Number.isFinite(radiusKm)) return mode === 'real' ? 0.00001 : 0.08;
   switch (mode) {
     case 'real': {
       // 100% mathematically exact 1:1 true scale from real NASA physical constants
@@ -146,7 +148,8 @@ export function scaleRadius(radiusKm: number, type: string, mode: ScaleMode, id?
 export function scaleMoonOffset(
   offsetAU: Vector3D,
   planetVisualRadius: number,
-  mode: ScaleMode
+  mode: ScaleMode,
+  ringedParentRadiusKm?: number
 ): Vector3D {
   const rAU = Math.sqrt(offsetAU.x * offsetAU.x + offsetAU.y * offsetAU.y + offsetAU.z * offsetAU.z);
   if (rAU === 0) return { x: 0, y: 0, z: 0 };
@@ -177,6 +180,12 @@ export function scaleMoonOffset(
     }
   }
 
+  // Ringed systems share one radial display transform so embedded moons stay in their ring gaps.
+  if(mode!=='real' && ringedParentRadiusKm) {
+    const ratio=rAU*KM_PER_AU/ringedParentRadiusKm;
+    // Preserve ring geometry inside three parent radii; compress distant satellite distances for overview readability.
+    scaledDistance=planetVisualRadius*0.95*(ratio<=3?ratio:3+Math.pow(ratio-3,0.45));
+  }
   const factor = scaledDistance / rAU;
   return {
     x: offsetAU.x * factor,

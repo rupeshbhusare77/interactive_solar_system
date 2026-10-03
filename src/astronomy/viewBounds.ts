@@ -8,7 +8,7 @@ export type ViewRegion = 'inner' | 'outer' | 'full';
 /** Bounding spheres include rings, elongated surfaces, atmospheres, and selection halos. */
 export function bodyViewRadius(body: CelestialBody, mode: ScaleMode): number {
   const radius = scaleRadius(body.physical.radiusKm, body.type, mode, body.id);
-  const shape = body.id === 'haumea' ? 1.85 : body.id === 'phobos' ? 1.45 : 1.3;
+  const shape = body.science?.radiiKm && Number.isFinite(body.physical.radiusKm) ? Math.max(...body.science.radiiKm)/body.physical.radiusKm : 1.3;
   let bound = radius * (body.type === 'star' ? 1.6 : Math.max(1.45, shape));
   if (body.rings) bound = Math.max(bound, scaleRingSystem(
     body.rings.innerRadiusKm, body.rings.outerRadiusKm, radius, body.physical.radiusKm, mode,
@@ -29,7 +29,7 @@ export function systemViewRadius(mode: ScaleMode, region: ViewRegion): number {
       if (!moon.moonOrbitalElements) continue;
       const offset = scaleMoonOffset({
         x: moon.moonOrbitalElements.aKm * (1 + moon.moonOrbitalElements.e) / KM_PER_AU, y: 0, z: 0,
-      }, scaleRadius(body.physical.radiusKm, body.type, mode, body.id), mode);
+      }, scaleRadius(body.physical.radiusKm, body.type, mode, body.id), mode, body.rings?body.physical.radiusKm:undefined);
       extent = Math.max(extent, offset.x + bodyViewRadius(moon, mode));
     }
     bound = Math.max(bound, scalePosition({ x: aphelion, y: 0, z: 0 }, mode).x + extent);
@@ -42,4 +42,15 @@ export function fitViewDistance(radius: number, verticalFovDegrees: number, aspe
   const vertical = verticalFovDegrees * Math.PI / 360;
   const horizontal = Math.atan(Math.tan(vertical) * Math.max(aspect, 0.01));
   return radius / Math.sin(Math.min(vertical, horizontal)) * 1.15;
+}
+
+/** Frame the inner satellite system; distant irregulars remain accessible individually. */
+export function satelliteSystemRadius(body:CelestialBody,mode:ScaleMode):number {
+  let bound=bodyViewRadius(body,mode);
+  for(const moon of CELESTIAL_BODIES.filter(candidate=>candidate.parentId===body.id && candidate.moonOrbitalElements && candidate.moonOrbitalElements.aKm<4000000)) {
+    const orbit=moon.moonOrbitalElements!;
+    const offset=scaleMoonOffset({x:orbit.aKm*(1+orbit.e)/KM_PER_AU,y:0,z:0},scaleRadius(body.physical.radiusKm,body.type,mode,body.id),mode,body.rings?body.physical.radiusKm:undefined);
+    bound=Math.max(bound,offset.x+bodyViewRadius(moon,mode));
+  }
+  return bound;
 }

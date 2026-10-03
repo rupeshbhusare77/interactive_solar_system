@@ -5,6 +5,7 @@
 
 import { CelestialBody } from './types';
 import { J2000_JD } from './constants';
+import { enrichCatalog } from './scienceCatalog';
 
 export const CELESTIAL_BODIES: CelestialBody[] = [
   // ==================== SUN ====================
@@ -1026,13 +1027,15 @@ export const CELESTIAL_BODIES: CelestialBody[] = [
   },
 ];
 
+enrichCatalog(CELESTIAL_BODIES);
+
 // Legacy numbers have no recoverable record-level source. Declare the intended simulation
 // epoch and frame without pretending that their phase/pole orientation is an ephemeris.
 for (const body of CELESTIAL_BODIES) {
   const orbit = body.orbitalElements ?? body.moonOrbitalElements;
   if (!orbit) continue;
   orbit.epochJD ??= J2000_JD;
-  orbit.referencePlane = body.moonOrbitalElements && body.id !== 'moon' ? 'parent-equator' : 'ecliptic-j2000';
+  orbit.referencePlane ??= body.moonOrbitalElements && body.id !== 'moon' ? 'parent-equator' : 'ecliptic-j2000';
   orbit.provenance ??= {
     status: 'illustrative', sourceUrls: [],
     note: 'Legacy catalog values with unverified record-level provenance. J2000 is the assumed numerical phase epoch. Satellite phase/node/periapsis and static parent pole azimuth are illustrative.',
@@ -1050,9 +1053,9 @@ export function validateCatalog(bodies: CelestialBody[]): string[] {
   for (const body of bodies) {
     if (body.parentId && (!ids.has(body.parentId) || body.parentId === body.id)) errors.push(`${body.id}: invalid parent`);
     for (const [key,value] of Object.entries(body.physical)) {
-      if (typeof value === 'number' && !Number.isFinite(value)) errors.push(`${body.id}: nonfinite ${key}`);
+      if (typeof value === 'number' && !Number.isFinite(value) && !(body.science?.unknownPhysical && Number.isNaN(value))) errors.push(`${body.id}: nonfinite ${key}`);
     }
-    if (body.physical.radiusKm <= 0 || body.physical.massKg <= 0 || body.physical.rotationPeriodHours === 0 || body.physical.axialTiltDeg < 0 || body.physical.axialTiltDeg > 180) errors.push(`${body.id}: invalid physical domain`);
+    if ((!body.science?.unknownPhysical && !Number.isFinite(body.physical.radiusKm)) || body.physical.radiusKm <= 0 || body.physical.massKg <= 0 || body.physical.rotationPeriodHours === 0 || body.physical.axialTiltDeg < 0 || body.physical.axialTiltDeg > 180) errors.push(`${body.id}: invalid physical domain`);
     const orbit = body.orbitalElements ?? body.moonOrbitalElements;
     if (!orbit) {
       if (body.type !== 'star') errors.push(`${body.id}: missing orbit`);
@@ -1063,7 +1066,7 @@ export function validateCatalog(bodies: CelestialBody[]): string[] {
     }
     const axis = 'a' in orbit ? orbit.a : orbit.aKm;
     if (!(axis > 0 && orbit.e >= 0 && orbit.e < 1 && orbit.i >= 0 && orbit.i <= 180 && orbit.periodDays > 0)) errors.push(`${body.id}: invalid orbital domain`);
-    if (!Number.isFinite(orbit.epochJD) || !['ecliptic-j2000','parent-equator'].includes(orbit.referencePlane ?? '') || !orbit.provenance) errors.push(`${body.id}: missing conventions/provenance`);
+    if (!Number.isFinite(orbit.epochJD) || !['ecliptic-j2000','parent-equator','laplace'].includes(orbit.referencePlane ?? '') || !orbit.provenance) errors.push(`${body.id}: missing conventions/provenance`);
     if (body.moonOrbitalElements && !body.parentId) errors.push(`${body.id}: missing moon parent`);
     if (orbit.modelRangeJD && (!orbit.modelRangeJD.every(Number.isFinite) || orbit.modelRangeJD[0] > orbit.modelRangeJD[1])) errors.push(`${body.id}: invalid local range`);
   }
