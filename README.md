@@ -156,7 +156,35 @@ The browser suite serves the production build under /interactive_solar_system/ a
 
 For a root-hosted site, use npm run build without --base. For another subfolder, pass its leading/trailing-slash path through --base. Texture URLs follow Vite's build base. The optional server accepts PORT and BASE_PATH environment variables and binds only to 127.0.0.1. It rejects traversal, sends real asset 404s, revalidates unhashed files, and caches hashed build assets immutably. It is a local preview, not a production hosting service.
 
-Hosting remains undecided. GitHub Pages is one option, but private repositories require a qualifying paid plan, and ordinary Pages sites can be publicly accessible even when source is private. No Pages settings or deployment were enabled. See [GitHub's Pages requirements](https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site) before choosing that target.
+## Hosting on Cloudflare Pages
+
+The application can be hosted on Cloudflare Pages using its Free plan. Connect the GitHub repository so Cloudflare builds and deploys updates when the selected branch receives a push. Private repositories are supported; the deployed website is publicly accessible by default.
+
+1. Commit and push the changes you want to publish yourself.
+2. Sign in to the [Cloudflare dashboard](https://dash.cloudflare.com/), open **Workers & Pages**, and choose **Create application → Pages → Connect to Git**.
+3. Connect GitHub and grant Cloudflare access to `rupeshbhusare77/interactive_solar_system`.
+4. Select the repository and configure the following settings.
+
+| Setting | Value |
+| --- | --- |
+| Project name | `interactive-solar-system`, or another available name |
+| Production branch | `enhancement` for the current implementation; use `main` once those changes have been merged there |
+| Framework preset | React (Vite) |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Root directory | Leave blank; `package.json` is at the repository root |
+| Environment variable | `NODE_VERSION=24` for production and preview builds |
+
+5. Choose **Save and Deploy**. Cloudflare installs dependencies, builds the site, and provides an HTTPS address ending in `.pages.dev`.
+6. Open that address and verify planet textures, Sun rendering, camera controls, mobile layout, and the measurement panel.
+
+Use the root build command above, without `--base=/interactive_solar_system/`. The GitHub Actions browser checks use a subfolder build for regression coverage; Cloudflare independently creates the root-hosted production build. The existing `.nvmrc` also specifies Node 24. No application secrets, backend, or paid domain are required.
+
+`public/_headers` enables immutable caching only for Vite's content-hashed files in `/assets/`. Surface maps and scientific data retain Cloudflare's default caching behavior so updates at their existing filenames can propagate normally.
+
+Later pushes to the production branch trigger deployment automatically. Other enabled branches receive preview deployments. If you change the release branch, update the production branch in the project's settings. The site is not published merely by adding these instructions to the repository.
+
+Official references: [Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/), [build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/), and [Free plan limits](https://developers.cloudflare.com/pages/platform/limits/).
 
 ## Attribution and contribution
 
@@ -164,7 +192,7 @@ Hosting remains undecided. GitHub Pages is one option, but private repositories 
 
 For contributions, use Node.js 24, install with npm ci, keep changes focused, and run the release checks above. Include a paused UTC date and viewport dimensions when reporting visual defects. Preserve physical calculations separately from illustrative display scaling.
 
-Before release: confirm image redistribution rights, select a project license, choose hosting, review the build artifact, and run CI after the owner commits and pushes. Publish only after those owner decisions. No live-demo URL is claimed.
+Before release: confirm image redistribution rights, select a project license, configure the Cloudflare Pages project, review the build artifact, and run CI after the owner commits and pushes. Publish only after those owner decisions. No live-demo URL is claimed.
 
 ## Sourced celestial systems
 
