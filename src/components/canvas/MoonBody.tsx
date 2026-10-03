@@ -31,6 +31,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
     selectBody,
     hoveredBodyId,
     setHoveredBodyId,
+    viewToggles,
   } = useSimulation();
 
   const moonGroupRef = useRef<THREE.Group>(null);
@@ -97,7 +98,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
     }
   });
 
-  const showLabel = isSelected || isHovered || isParentSelected;
+  const showLabel = viewToggles.showLabels && (isSelected || isHovered || isParentSelected);
 
   return (
     <group ref={moonGroupRef}>
@@ -124,8 +125,8 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
           map={texture}
           color="#ffffff"
           bumpMap={bumpMap || undefined}
-          bumpScale={bumpMap ? radius * 0.025 : 0}
-          roughness={0.9}
+          bumpScale={bumpMap ? radius * 0.004 : 0}
+          roughness={1}
           metalness={0}
         />
       </mesh>
@@ -135,7 +136,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
         <AtmosphereGlow
           radius={radius}
           color={moon.atmosphereColor}
-          intensity={1.25}
+          intensity={0.6}
           power={3.2}
         />
       )}
@@ -171,7 +172,7 @@ export const MoonBody: React.FC<MoonBodyProps> = ({ moon, parentVisualRadius }) 
                   : 'bg-black/85 text-zinc-300 border border-zinc-700/80 backdrop-blur-sm'
               }`}
             >
-              🌑 {moon.name}
+              {moon.name}
             </span>
           </div>
         </Html>

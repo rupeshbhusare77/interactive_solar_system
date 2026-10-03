@@ -181,17 +181,18 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
           }}
         >
           <sphereGeometry args={[radius, 64, 64]} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial
+            specularIntensity={body.id === 'earth' ? 0.3 : 1}
             onUpdate={restoreDataTextureRoles}
             map={texture}
             color="#ffffff"
             normalMap={normalMap || undefined}
-            normalScale={normalMap ? new THREE.Vector2(0.35, 0.35) : undefined}
+            normalScale={normalMap ? new THREE.Vector2(0.12, 0.12) : undefined}
             bumpMap={bumpMap || undefined}
-            bumpScale={bumpMap ? radius * 0.025 : 0}
+            bumpScale={bumpMap ? radius * 0.006 : 0}
             roughnessMap={roughnessMap || undefined}
-            roughness={body.id === 'earth' ? 1 : ['gas-giant', 'ice-giant'].includes(body.textureType) ? 0.65 : 0.85}
-            metalness={0.02}
+            roughness={1}
+            metalness={0}
             emissive={new THREE.Color(0x000000)}
             emissiveIntensity={0}
           />
@@ -214,17 +215,18 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             planetVisualRadius={radius}
             ringDensity={ringDensity!}
             spinGroupRef={spinGroupRef}
+            geometryScale={geometryScale}
           />
         )}
 
         {/* Earth Atmospheric Cloud Deck */}
         {body.hasClouds && cloudsTexture && (
-          <mesh ref={cloudsMeshRef}>
-            <sphereGeometry args={[radius * 1.01, 64, 64]} />
+          <mesh ref={cloudsMeshRef} scale={geometryScale}>
+            <sphereGeometry args={[radius * 1.003, 64, 64]} />
             <meshStandardMaterial
               map={cloudsTexture}
               transparent
-              opacity={0.65}
+              opacity={0.78}
               blending={THREE.NormalBlending}
               depthWrite={false}
               roughness={1.0}
@@ -234,12 +236,14 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
 
         {/* Photorealistic Atmospheric Rayleigh Scattering Glow */}
         {body.hasAtmosphere && body.atmosphereColor && (
+          <group scale={geometryScale}>
           <AtmosphereGlow
             radius={radius}
             color={body.atmosphereColor}
-            intensity={body.id === 'earth' ? 1.25 : body.id === 'venus' ? 1.15 : 1.05}
+            intensity={body.id === 'earth' ? 0.55 : body.id === 'venus' ? 0.65 : 0.35}
             power={body.id === 'earth' ? 3.6 : 3.0}
           />
+          </group>
         )}
 
         {/* Photorealistic High-Fidelity Ring System with Planetary Shadow & Optical Scattering */}
@@ -252,7 +256,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
             ringTexture={ringTexture}
             ringDensity={ringDensity!}
             opacity={body.rings.opacity}
-            ringColor={body.rings.color || '#ffffff'}
+            ringColor={body.id === 'saturn' ? '#ffffff' : body.rings.color || '#ffffff'}
             planetWorldGroupRef={planetGroupRef}
           />
         )}
@@ -285,7 +289,7 @@ export const PlanetBody: React.FC<PlanetBodyProps> = ({ body }) => {
       )}
 
       {/* Contextual Planet Label */}
-      {(viewToggles.showLabels || isHovered || isSelected) && (
+      {viewToggles.showLabels && (
         <Html
           position={[0, radius + 1.2, 0]}
           center

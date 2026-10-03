@@ -44,12 +44,20 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
       transitioning.current = false;
     } else if (selectedBody && (cameraMode === 'system' || cameraMode === 'focus' || cameraMode === 'follow')) {
       const distance = fitViewDistance(bodyRadius, camera.fov, aspect);
-      followOffset.current.set(0.7, 0.35, 1).normalize().multiplyScalar(distance);
+      const position = getBodyPosition(selectedBody.id, scaleMode)?.displayPosition;
+      const sunward = position ? new THREE.Vector3(-position.x, -position.y, -position.z) : new THREE.Vector3(0, 0, 1);
+      if (sunward.lengthSq() < 1e-12) sunward.set(0, 0, 1);
+      sunward.normalize();
+      const sideways = new THREE.Vector3().crossVectors(sunward, new THREE.Vector3(0, 1, 0));
+      if (sideways.lengthSq() < 1e-6) sideways.set(1, 0, 0);
+      followOffset.current.copy(sunward).addScaledVector(sideways.normalize(), 0.65);
+      followOffset.current.y += 0.25;
+      followOffset.current.normalize().multiplyScalar(distance);
       transitioning.current = true;
     }
     previousBodyPosition.current = null;
     controlsRef.current.update();
-  }, [cameraMode, selectedBodyId, scaleMode, region, size.width, size.height, bodyRadius, systemRadius, camera, selectedBody]);
+  }, [cameraMode, selectedBodyId, scaleMode, region, size.width, size.height, bodyRadius, systemRadius, camera, selectedBody, getBodyPosition]);
 
   useSceneFrame((_, delta) => {
     const controls = controlsRef.current;

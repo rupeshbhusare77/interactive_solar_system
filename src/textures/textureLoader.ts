@@ -127,8 +127,8 @@ export function loadEarthRoughnessMap(): THREE.Texture {
     context.drawImage(image, 0, 0);
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
     for (let index = 0; index < pixels.data.length; index += 4) {
-      // Bright specular ocean pixels become smooth; dark land pixels remain rough.
-      const roughness = Math.round(230 - pixels.data[index + 1] * (210 / 255));
+      // Oceans retain a broad reflection; land remains rough at this viewing scale.
+      const roughness = Math.round(240 - pixels.data[index + 1] * (140 / 255));
       pixels.data[index] = pixels.data[index + 1] = pixels.data[index + 2] = roughness;
     }
     context.putImageData(pixels, 0, 0);
@@ -153,7 +153,11 @@ export function loadRingDensity(bodyId: string): THREE.Texture {
       density[index * 4] = density[index * 4 + 1] = density[index * 4 + 2] = pixels[index * 4 + 3];
       density[index * 4 + 3] = 255;
     }
-    return new THREE.DataTexture(density, source.width, 1, THREE.RGBAFormat);
+    const texture = new THREE.DataTexture(density, source.width, 1, THREE.RGBAFormat);
+    texture.generateMipmaps = true;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    return texture;
   }, false, true);
 }
 

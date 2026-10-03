@@ -1,8 +1,8 @@
 /**
  * 3D Solar System Simulator — Atmospheric Rayleigh Scattering Glow Shader
- * Produces photorealistic atmospheric limb haze (ethereal azure blue on Earth,
+ * Approximates atmospheric limb haze (blue on Earth,
  * amber on Venus, orange tholin haze on Titan) illuminated exclusively on the day side
- * with authentic sunset transitions at the twilight terminator.
+ * with a soft color transition at the twilight terminator.
  */
 
 import React, { useMemo } from 'react';
@@ -94,7 +94,7 @@ export const AtmosphereGlow: React.FC<AtmosphereGlowProps> = ({
 
   return (
     <mesh>
-      <sphereGeometry args={[radius * 1.018, 64, 64]} />
+      <sphereGeometry args={[radius * 1.012, 64, 64]} />
       <shaderMaterial
         vertexShader={ATMOSPHERE_VERTEX_SHADER}
         fragmentShader={ATMOSPHERE_FRAGMENT_SHADER}

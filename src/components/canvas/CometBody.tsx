@@ -26,6 +26,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
     selectBody,
     hoveredBodyId,
     setHoveredBodyId,
+    viewToggles,
   } = useSimulation();
 
   const {camera}=useThree();
@@ -35,6 +36,23 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
   const comaRef=useRef<THREE.Sprite>(null);
   const dustTailMeshRef = useRef<THREE.Mesh>(null);
 
+  // Illustrative rough nucleus; no resolved shape model is available for these catalog entries.
+  const nucleusGeometry=useMemo(()=>{
+    const geometry=new THREE.SphereGeometry(1,96,64);
+    const positions=geometry.attributes.position;
+    const colors=new Float32Array(positions.count*3);
+    for(let index=0;index<positions.count;index++) {
+      const x=positions.getX(index),y=positions.getY(index),z=positions.getZ(index);
+      const relief=Math.sin(x*19+y*7)*Math.sin(y*23-z*11)*Math.sin(z*17+x*13);
+      const extent=1+relief*0.018+0.04*Math.sin(x*5+y*3)*Math.sin(z*4-y*2);
+      positions.setXYZ(index,x*extent,y*extent,z*extent);
+      const shade=0.75+relief*0.15;
+      colors.set([shade,shade,shade],index*3);
+    }
+    geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    geometry.computeVertexNormals();
+    return geometry;
+  },[]);
   const tailGeometry=useMemo(()=>{
     const geometry=new THREE.PlaneGeometry(1,1,1,32);
     const positions=geometry.attributes.position;
@@ -68,7 +86,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
     context.fillStyle=gradient;context.fillRect(0,0,64,64);
     return new THREE.CanvasTexture(canvas);
   },[]);
-  useEffect(()=>()=>{tailGeometry.dispose();ionMaterial.dispose();dustMaterial.dispose();comaTexture.dispose();},[tailGeometry,ionMaterial,dustMaterial,comaTexture]);
+  useEffect(()=>()=>{nucleusGeometry.dispose();tailGeometry.dispose();ionMaterial.dispose();dustMaterial.dispose();comaTexture.dispose();},[nucleusGeometry,tailGeometry,ionMaterial,dustMaterial,comaTexture]);
   const radius = scaleRadius(comet.physical.radiusKm, 'comet', scaleMode);
   const isSelected = selectedBodyId === comet.id;
   const isHovered = hoveredBodyId === comet.id;
@@ -119,7 +137,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
   return (
     <group ref={groupRef} name={comet.id}>
       {/* Comet Nucleus */}
-      <mesh
+      <mesh geometry={nucleusGeometry} scale={[radius*0.85, radius*0.65, radius*1.1]}
         onClick={(e) => {
           e.stopPropagation();
           selectBody(comet.id);
@@ -134,8 +152,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
           document.body.style.cursor = 'auto';
         }}
       >
-        <sphereGeometry args={[radius, 16, 16]} />
-        <meshStandardMaterial color="#94a3b8" roughness={0.9} />
+        <meshStandardMaterial color="#57514a" vertexColors roughness={1} metalness={0} />
       </mesh>
 
       {/* Diffuse coma without a hard spherical silhouette. */}
@@ -158,7 +175,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
       )}
 
       {/* Decluttered Comet Label (only shown when focused or hovered) */}
-      {(isSelected || isHovered) && (
+      {(viewToggles.showLabels && (isSelected || isHovered)) && (
         <Html
           position={[0, radius + 0.6, 0]}
           center
@@ -173,7 +190,7 @@ export const CometBody: React.FC<CometBodyProps> = ({ comet }) => {
                   : 'bg-black/85 text-sky-300 border border-sky-500/50 backdrop-blur-sm'
               }`}
             >
-              ☄️ {comet.name}
+              {comet.name}
             </span>
           </div>
         </Html>

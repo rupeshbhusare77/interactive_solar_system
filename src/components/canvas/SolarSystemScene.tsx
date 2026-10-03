@@ -95,6 +95,7 @@ export const SolarSystemScene: React.FC = () => {
     setAttempt(value => value + 1);
   };
   const bodies = [...PLANETS, ...DWARF_PLANETS];
+  const comets = COMETS;
 
   return (
     <div className="w-full h-full relative cursor-grab active:cursor-grabbing">
@@ -103,19 +104,20 @@ export const SolarSystemScene: React.FC = () => {
         <SceneErrorBoundary key={attempt} retry={retry}>
           <Canvas ref={canvasRef}
             camera={{ position: [0, 85, 120], fov: 45, near: 0.01, far: 150000 }}
+            dpr={[1, 2]}
             gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-            onCreated={({ gl }) => { guardSceneRenderer(gl); setReady(true); }}
+            onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1; guardSceneRenderer(gl); setReady(true); }}
             onPointerMissed={() => selectBody(null)}
             >
             <Suspense fallback={null}>
               <color attach="background" args={['#020408']} />
               <Starfield />
-              <ambientLight intensity={viewToggles.showLighting ? 0.08 : 0.4} color="#e0f2fe" />
+              <ambientLight intensity={viewToggles.showLighting ? 0.035 : 1.5} color="#ffffff" />
               <SunBody />
               <HabitableZone />
               {[...bodies, ...COMETS].map(body => <OrbitPath key={body.id} body={body} />)}
               {bodies.map(body => <PlanetBody key={body.id} body={body} />)}
-              {COMETS.map(comet => <CometBody key={comet.id} comet={comet} />)}
+              {comets.map(comet => <CometBody key={comet.id} comet={comet} />)}
               <AsteroidBelt />
               <KuiperBelt />
               {isMeasurementOpen && <MeasurementLine />}

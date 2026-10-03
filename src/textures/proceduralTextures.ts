@@ -725,7 +725,10 @@ export function getSaturnRingTexture(): THREE.CanvasTexture {
   const image=context.createImageData(canvas.width,1);
   for(let index=0;index<canvas.width;index++) {
     const radius=SATURN_RINGS.innerKm+(SATURN_RINGS.outerKm-SATURN_RINGS.innerKm)*(index+0.5)/canvas.width;
-    image.data.set([220,210,190,Math.round(saturnRingOpacity(radius)*255)],index*4);
+    // Illustrative fine banding; sourced boundaries and named gaps remain authoritative.
+    const banding=0.88+0.07*Math.sin(radius*0.035)+0.035*Math.sin(radius*0.113)+0.015*Math.sin(radius*0.47);
+    const brightness=radius<91975?0.72:radius<117500?1:radius<122050?0.65:0.92;
+    image.data.set([232,224,207].map(channel=>Math.round(channel*brightness*banding)).concat(Math.round(saturnRingOpacity(radius)*banding*255)),index*4);
   }
   context.putImageData(image,0,0);
   const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;

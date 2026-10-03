@@ -8,7 +8,7 @@ import { useSimulation } from '../../state/simulationContext';
 import { useSceneFrame } from './useSceneFrame';
 /** Small moons remain selectable navigation markers; point size is not a physical measurement. */
 export function MoonMarkers({parentId}:{parentId:string}) {
-  const {getBodyPosition,scaleMode,selectBody,selectedBodyId}=useSimulation();
+  const {getBodyPosition,scaleMode,selectBody,selectedBodyId,cameraMode}=useSimulation();
   const moons=useMemo(()=>MOONS.filter(moon=>moon.parentId===parentId && !(moon.physical.radiusKm>=100)),[parentId]);
   const {camera,size}=useThree();
   const pointsRef=useRef<THREE.Points>(null);
@@ -23,7 +23,7 @@ export function MoonMarkers({parentId}:{parentId:string}) {
     points.getWorldPosition(worldPosition);
     const distance=camera.position.distanceTo(worldPosition);
     const angularSize=scaleRadius(parent.physical.radiusKm,parent.type,scaleMode)/Math.max(distance,1e-6);
-    const opacity=(selectedBodyId===parentId || selectedMoon) ? THREE.MathUtils.smoothstep(angularSize,0.012,0.04)*0.55 : 0;
+    const opacity=(cameraMode==='system' && (selectedBodyId===parentId || selectedMoon)) ? THREE.MathUtils.smoothstep(angularSize,0.012,0.04)*0.55 : 0;
     points.visible=opacity>0.01;
     (points.material as THREE.PointsMaterial).opacity=opacity;
     if(!points.visible)return;
@@ -49,6 +49,11 @@ export function MoonMarkers({parentId}:{parentId:string}) {
   };
   return <points ref={pointsRef} raycast={raycast} frustumCulled={false} onClick={event=>{event.stopPropagation();if(event.index!==undefined)selectBody(moons[event.index].id);}}>
     <bufferGeometry><bufferAttribute ref={attribute} attach="attributes-position" args={[positions,3]}/></bufferGeometry>
-    <pointsMaterial size={1.5} sizeAttenuation={false} color="#bbc7d9" transparent opacity={0.7}/>
+    <pointsMaterial size={1.5} sizeAttenuation={false} color="#bbc7d9" transparent opacity={0.7} depthWrite={false} alphaTest={0.01}
+      onBeforeCompile={shader=>{
+        shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',
+          'diffuseColor.a *= 1.0 - smoothstep(0.15, 0.5, length(gl_PointCoord - vec2(0.5)));\n#include <opaque_fragment>');
+      }}/>
+
   </points>;
 }

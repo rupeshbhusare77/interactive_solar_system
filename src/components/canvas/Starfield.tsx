@@ -21,7 +21,7 @@ export const Starfield: React.FC = () => {
         <meshBasicMaterial
           map={galaxyTexture}
           side={THREE.BackSide}
-          color={new THREE.Color(0.65, 0.65, 0.65)}
+          color={new THREE.Color(0.035, 0.035, 0.035)}
           toneMapped={false}
           depthWrite={false}
           depthTest={false}

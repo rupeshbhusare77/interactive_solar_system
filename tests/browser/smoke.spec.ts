@@ -87,3 +87,73 @@ test('Saturn catalog, system framing, reference accuracy, and unknown physical d
   await expect(page.getByLabel(/information/)).not.toContainText('NaN');
   await expect(page.getByRole('alert',{name:'Scene recovery'})).not.toBeVisible();
 });
+
+
+test('focused bodies render without shader errors or failed maps', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text());
+  });
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Reset date to now', exact: true }).click();
+  const search = page.getByRole('combobox', { name: 'Search celestial bodies' });
+  for (const name of ['Earth', 'Jupiter', 'Saturn', 'Moon', 'Sun', '2P/Encke']) {
+    await search.fill(name);
+    await search.press('ArrowDown');
+    await search.press('Enter');
+    await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close telemetry panel', exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Loading scene assets' })).not.toBeVisible();
+    await expect(page.locator('summary').filter({ hasText: 'Using fallback maps' })).not.toBeVisible();
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(page.getByRole('alert', { name: 'Scene recovery' })).not.toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(name.replace(/[^a-z]/gi, '') + '.png') });
+    await page.getByRole('button', { name: 'Visual layers' }).click();
+    const labels = page.getByRole('button', { name: 'Celestial labels', exact: true });
+    await labels.click();
+    await expect(labels).toHaveAttribute('aria-pressed', 'false');
+    const scene = page.locator('canvas').locator('..').locator('..');
+    await expect(scene.locator('span')).toHaveCount(0);
+    await labels.click();
+    await expect(labels).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Escape');
+  }
+  expect(errors).toEqual([]);
+});
+
+
+test('focus and follow retain other planets and respect the orbit layer', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Reset date to now', exact: true }).click();
+  const search = page.getByRole('combobox', { name: 'Search celestial bodies' });
+  await search.fill('Earth'); await search.press('ArrowDown'); await search.press('Enter');
+  await page.getByRole('button', { name: 'Close telemetry panel', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Loading scene assets' })).not.toBeVisible();
+  const scene = page.locator('canvas').locator('..').locator('..');
+  const settle = () => page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  for (const mode of ['Focus', 'Lock & Follow']) {
+    await page.getByRole('button', { name: 'Camera tracking mode' }).click();
+    await page.getByRole('option', { name: new RegExp('^' + mode) }).click();
+    await settle();
+    for (const name of ['Sun', 'Jupiter', 'Saturn', 'Neptune']) {
+      await expect(scene.getByText(name, { exact: true })).toBeAttached();
+    }
+    await page.mouse.move(1400, 20);
+    const withOrbits = await page.screenshot({ clip: { x: 380, y: 120, width: 800, height: 580 } });
+    await page.getByRole('button', { name: 'Visual layers' }).click();
+    const orbitToggle = page.getByRole('button', { name: 'Orbit paths', exact: true });
+    await expect(orbitToggle).toHaveAttribute('aria-pressed', 'true');
+    await orbitToggle.click();
+    await expect(orbitToggle).toHaveAttribute('aria-pressed', 'false');
+    await page.keyboard.press('Escape');
+    await page.mouse.move(1400, 20); await settle();
+    const withoutOrbits = await page.screenshot({ clip: { x: 380, y: 120, width: 800, height: 580 } });
+    expect(withOrbits.equals(withoutOrbits)).toBe(false);
+    await page.getByRole('button', { name: 'Visual layers' }).click();
+    await orbitToggle.click();
+    await page.keyboard.press('Escape');
+  }
+});

@@ -61,3 +61,9 @@ The active background uses `public/textures/milkyway-eso.jpg`, downloaded direct
 The downloaded image is unchanged. The renderer reduces its display brightness and maps it onto a camera-centered sphere. The panorama is a photographic composite, not a live view or a naked-eye exposure simulation. Its orientation is illustrative and is not registered to the simulation's celestial coordinates. No randomly generated stars are overlaid. The original unverified `milkyway.png` is retained in the repository but is no longer loaded.
 
 SHA-256: `5363732a1629eed9df2f707b31eaae6b117c0ee35d7cc8d6ddd636bc6512302d`.
+
+## Visual presentation
+
+The scene uses a deliberately dimmed photographic sky so sunlit planets remain legible. This is an artistic exposure balance, not a calibrated camera model; [NASA explains why stars often disappear in daytime Earth photographs](https://science.nasa.gov/blogs/earth-matters/2011/09/28/where-are-the-stars/). Focus and Follow views move the camera without removing other bodies. Orbit paths and celestial labels remain available through the Layers controls in every camera mode.
+
+The solar halo, atmospheric rim, comet nucleus relief, dust-tail curvature, and fine Saturn ring banding are illustrative. Ring boundaries and named gaps retain their sourced radii; the added fine banding is not an occultation-derived optical-depth profile. Materials and exposure adjustments do not establish provenance for legacy surface maps listed above. The solar map's single approximate rotation period does not model differential rotation.
