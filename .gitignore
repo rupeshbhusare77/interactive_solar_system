@@ -37,3 +37,6 @@ Desktop.ini
 /docs/STAGE4_PROGRESS.md
 
 /docs/REALISM_PROGRESS.md
+
+# Local Cloudflare tooling state.
+/.wrangler/

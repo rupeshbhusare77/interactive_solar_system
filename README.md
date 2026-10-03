@@ -156,6 +156,27 @@ The browser suite serves the production build under /interactive_solar_system/ a
 
 For a root-hosted site, use npm run build without --base. For another subfolder, pass its leading/trailing-slash path through --base. Texture URLs follow Vite's build base. The optional server accepts PORT and BASE_PATH environment variables and binds only to 127.0.0.1. It rejects traversal, sends real asset 404s, revalidates unhashed files, and caches hashed build assets immutably. It is a local preview, not a production hosting service.
 
+## Hosting on Cloudflare Workers
+
+The existing Cloudflare project can serve this application using Workers Static Assets. `wrangler.json` identifies the Worker as `interactive-solar-system` and points to the root-hosted production build in `dist/`. Static asset requests are free and unlimited under [Cloudflare's documented pricing](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/).
+
+Use these settings in **Settings → Builds**:
+
+| Setting | Value |
+| --- | --- |
+| Build command | `npm run build` |
+| Production deploy command | `npx wrangler deploy` |
+| Preview deploy command | `npx wrangler preview` |
+| Root directory | `/` |
+| Production branch | `main`, after the desired changes and `wrangler.json` have been merged and pushed there |
+| Build variable | `NODE_VERSION=24` |
+
+Commit, merge, and push changes yourself. Cloudflare deploys the selected branch; uncommitted local files are not included. Keep the Worker URL enabled and leave Access authentication disabled for a public website. After the deployment succeeds, use **Visit** to verify the application. No Worker script, backend, or application secret is required.
+
+`wrangler.json` includes an empty `previews` block required by the preview command. Preview builds use the same static assets and compatibility settings as production.
+
+For a local configuration check without publishing, build first and run `npx wrangler deploy --dry-run`. The following Pages instructions are an alternative hosting setup, not settings for this Worker project.
+
 ## Hosting on Cloudflare Pages
 
 The application can be hosted on Cloudflare Pages using its Free plan. Connect the GitHub repository so Cloudflare builds and deploys updates when the selected branch receives a push. Private repositories are supported; the deployed website is publicly accessible by default.
