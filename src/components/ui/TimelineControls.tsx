@@ -100,7 +100,7 @@ export const TimelineControls: React.FC = () => {
   return (
     <div
       ref={timelineRef}
-      className="timeline-panel glass-panel rounded-xl p-3 flex flex-col gap-2 pointer-events-auto border border-white/10 shadow-2xl backdrop-blur-xl"
+      className="timeline-panel glass-panel rounded-xl p-3 flex flex-col gap-2 pointer-events-auto border border-ui-line shadow-2xl backdrop-blur-xl"
       aria-label="Simulation timeline"
     >
       {/* Primary Top Row: Live Clock, Transport Controls, Speed & Popovers */}
@@ -115,11 +115,11 @@ export const TimelineControls: React.FC = () => {
           />
           <time
             dateTime={simulationDate.toISOString()}
-            className="simulation-time text-xs font-mono font-bold text-white tracking-wider tabular-nums"
+            className="simulation-time text-xs font-mono font-bold text-ui-primary tracking-wider tabular-nums"
           >
             {simulationDate.toUTCString().replace('GMT', 'UTC')}
           </time>
-          <span className="text-[10px] font-mono text-zinc-400 hidden md:inline">
+          <span className="simulation-julian-date text-[10px] font-mono text-ui-muted hidden md:inline">
             JD {dateToJulianDate(simulationDate).toFixed(2)}
           </span>
         </div>
@@ -131,7 +131,7 @@ export const TimelineControls: React.FC = () => {
             onClick={() => stepTime(-30)}
             aria-label="Step back 30 days"
             title="Step back 30 days"
-            className="glass-button p-1.5 rounded-lg text-zinc-300 hover:text-white"
+            className="glass-button p-1.5 rounded-lg text-ui-secondary hover:text-ui-primary"
           >
             <SkipBack className="w-3.5 h-3.5" />
           </button>
@@ -141,7 +141,7 @@ export const TimelineControls: React.FC = () => {
             onClick={() => stepTime(-1)}
             aria-label="Step back one day"
             title="Step back one day"
-            className="glass-button p-1.5 rounded-lg text-zinc-300 hover:text-white"
+            className="glass-button p-1.5 rounded-lg text-ui-secondary hover:text-ui-primary"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
@@ -151,8 +151,8 @@ export const TimelineControls: React.FC = () => {
             onClick={togglePlay}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
               isPlaying
-                ? 'bg-sky-500/25 border border-sky-400 text-sky-300 shadow-glow-cyan'
-                : 'glass-button text-amber-300 border-amber-400/40'
+                ? 'bg-ui-selected border border-ui-line text-ui-accent shadow-glow-cyan'
+                : 'glass-button text-ui-warning border-amber-400/40'
             }`}
           >
             {isPlaying ? (
@@ -173,7 +173,7 @@ export const TimelineControls: React.FC = () => {
             onClick={() => stepTime(1)}
             aria-label="Step forward one day"
             title="Step forward one day"
-            className="glass-button p-1.5 rounded-lg text-zinc-300 hover:text-white"
+            className="glass-button p-1.5 rounded-lg text-ui-secondary hover:text-ui-primary"
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
@@ -183,7 +183,7 @@ export const TimelineControls: React.FC = () => {
             onClick={() => stepTime(30)}
             aria-label="Step forward 30 days"
             title="Step forward 30 days"
-            className="glass-button p-1.5 rounded-lg text-zinc-300 hover:text-white"
+            className="glass-button p-1.5 rounded-lg text-ui-secondary hover:text-ui-primary"
           >
             <SkipForward className="w-3.5 h-3.5" />
           </button>
@@ -195,8 +195,8 @@ export const TimelineControls: React.FC = () => {
             title={speedMultiplier < 0 ? 'Reverse motion active' : 'Reverse motion'}
             className={`p-1.5 rounded-lg transition-colors ${
               speedMultiplier < 0
-                ? 'bg-amber-500/25 border border-amber-400/80 text-amber-300'
-                : 'glass-button text-zinc-400 hover:text-white'
+                ? 'bg-amber-500/25 border border-amber-400/80 text-ui-warning'
+                : 'glass-button text-ui-muted hover:text-ui-primary'
             }`}
           >
             {speedMultiplier < 0 ? (
@@ -221,20 +221,20 @@ export const TimelineControls: React.FC = () => {
               aria-label="Simulation speed"
               aria-expanded={isSpeedOpen}
               aria-controls={speedMenuId}
-              className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-zinc-300 hover:text-white ${
+              className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-ui-secondary hover:text-ui-primary ${
                 isSpeedOpen ? 'active' : ''
               }`}
             >
-              <Sliders className="w-3 h-3 text-sky-400" />
+              <Sliders className="w-3 h-3 text-ui-accent" />
               <span className="font-mono">{currentSpeed?.label.split(' ')[0] ?? `${speed.toLocaleString()}×`}</span>
             </button>
 
             {isSpeedOpen && (
               <div
                 id={speedMenuId}
-                className="timeline-popover glass-panel rounded-xl p-1.5 space-y-1 z-50 text-xs border border-zinc-700 shadow-2xl"
+                className="timeline-popover glass-panel rounded-xl p-1.5 space-y-1 z-50 text-xs border border-ui-line shadow-2xl"
               >
-                <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-zinc-400 border-b border-zinc-800">
+                <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                   Simulation Speed
                 </div>
                 {SPEED_PRESETS.map((preset) => {
@@ -248,11 +248,11 @@ export const TimelineControls: React.FC = () => {
                         setIsSpeedOpen(false);
                       }}
                       className={`w-full px-2.5 py-1.5 text-left rounded-lg flex items-center justify-between transition-colors ${
-                        isCurrent ? 'bg-sky-500/20 text-white font-medium' : 'hover:bg-white/10 text-zinc-300'
+                        isCurrent ? 'bg-ui-selected text-ui-primary font-medium' : 'hover:bg-ui-inset text-ui-secondary'
                       }`}
                     >
                       <span>{preset.label}</span>
-                      {isCurrent && <Check className="w-3.5 h-3.5 text-sky-400" />}
+                      {isCurrent && <Check className="w-3.5 h-3.5 text-ui-accent" />}
                     </button>
                   );
                 })}
@@ -272,7 +272,7 @@ export const TimelineControls: React.FC = () => {
               aria-label="Historic astronomical events"
               aria-expanded={isEventsOpen}
               aria-controls={eventsMenuId}
-              className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-amber-300 hover:text-white ${
+              className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-ui-warning hover:text-ui-primary ${
                 isEventsOpen ? 'active' : ''
               }`}
             >
@@ -283,11 +283,11 @@ export const TimelineControls: React.FC = () => {
             {isEventsOpen && (
               <div
                 id={eventsMenuId}
-                className="timeline-popover glass-panel rounded-xl p-2 space-y-1.5 z-50 text-xs border border-zinc-700 shadow-2xl max-w-sm"
+                className="timeline-popover glass-panel rounded-xl p-2 space-y-1.5 z-50 text-xs border border-ui-line shadow-2xl max-w-sm"
               >
-                <div className="px-2 py-1 text-[10px] uppercase font-mono text-zinc-400 border-b border-zinc-800 flex items-center justify-between">
+                <div className="px-2 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line flex items-center justify-between">
                   <span>Historic Mission Milestones</span>
-                  <span className="text-zinc-500">Pauses simulation</span>
+                  <span className="text-ui-muted">Pauses simulation</span>
                 </div>
                 {HISTORIC_EVENTS.map((event) => (
                   <button
@@ -299,15 +299,15 @@ export const TimelineControls: React.FC = () => {
                       setCameraMode('focus');
                       setIsEventsOpen(false);
                     }}
-                    className="w-full text-left p-2 rounded-lg glass-button hover:bg-white/10 transition-colors flex flex-col gap-0.5"
+                    className="w-full text-left p-2 rounded-lg glass-button hover:bg-ui-inset transition-colors flex flex-col gap-0.5"
                   >
-                    <div className="font-semibold text-white flex items-center justify-between">
+                    <div className="font-semibold text-ui-primary flex items-center justify-between">
                       <span>{event.name}</span>
-                      <span className="text-[10px] text-sky-400 font-mono">
+                      <span className="text-[10px] text-ui-accent font-mono">
                         {event.date.split('T')[0]}
                       </span>
                     </div>
-                    <div className="text-[11px] text-zinc-400 line-clamp-2">
+                    <div className="text-[11px] text-ui-muted line-clamp-2">
                       {event.description}
                     </div>
                   </button>
@@ -331,7 +331,7 @@ export const TimelineControls: React.FC = () => {
               aria-label="Set simulation date"
               aria-expanded={isDateOpen}
               aria-controls={dateMenuId}
-              className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-sky-300 hover:text-white ${
+              className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-ui-accent hover:text-ui-primary ${
                 isDateOpen ? 'active' : ''
               }`}
             >
@@ -343,7 +343,7 @@ export const TimelineControls: React.FC = () => {
               <form
                 id={dateMenuId}
                 noValidate
-                className="timeline-popover glass-panel rounded-xl p-3 flex flex-col gap-2.5 z-50 text-xs border border-zinc-700 shadow-2xl"
+                className="timeline-popover glass-panel rounded-xl p-3 flex flex-col gap-2.5 z-50 text-xs border border-ui-line shadow-2xl"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const date = new FormData(event.currentTarget).get('simulation-date');
@@ -353,11 +353,11 @@ export const TimelineControls: React.FC = () => {
                   }
                 }}
               >
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
-                  <label htmlFor="simulation-date" className="font-semibold text-white">
+                <div className="flex items-center justify-between border-b border-ui-line pb-1">
+                  <label htmlFor="simulation-date" className="font-semibold text-ui-primary">
                     Jump to UTC Date
                   </label>
-                  <span className="text-[10px] text-zinc-400 font-mono">
+                  <span className="text-[10px] text-ui-muted font-mono">
                     {SIMULATION_DATE_RANGE_LABEL}
                   </span>
                 </div>
@@ -369,15 +369,15 @@ export const TimelineControls: React.FC = () => {
                   min={calendarDate(SIMULATION_MIN_DATE)}
                   max={calendarDate(SIMULATION_MAX_DATE)}
                   defaultValue={calendarDate(simulationDate)}
-                  className="bg-black/70 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono focus:border-sky-400 focus:outline-none"
+                  className="bg-ui-inset border border-ui-line rounded-lg px-2.5 py-1.5 text-xs text-ui-primary font-mono focus:border-ui-line focus:outline-none"
                 />
                 <button
                   type="submit"
-                  className="glass-button bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 rounded-lg py-1.5 text-xs font-semibold"
+                  className="glass-button bg-ui-selected hover:bg-ui-selected text-ui-accent rounded-lg py-1.5 text-xs font-semibold"
                 >
                   Apply UTC Date
                 </button>
-                <p className="text-[10px] text-zinc-400 leading-tight">
+                <p className="text-[10px] text-ui-muted leading-tight">
                   Applying a date pauses playback. Resume when ready.
                 </p>
               </form>
@@ -389,22 +389,22 @@ export const TimelineControls: React.FC = () => {
             onClick={resetToNow}
             title="Set current UTC time and pause (preserves speed and view)"
             aria-label="Reset date to now"
-            className="glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-zinc-300 hover:text-white"
+            className="glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-ui-secondary hover:text-ui-primary"
           >
-            <RotateCcw className="w-3 h-3 text-zinc-400" />
+            <RotateCcw className="w-3 h-3 text-ui-muted" />
             <span className="hidden sm:inline">Now</span>
           </button>
         </div>
       </div>
 
       {/* Interactive Time Scrubber Slider */}
-      <div className="w-full flex flex-col gap-1 pt-1.5 border-t border-zinc-800/80">
-        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-400 px-1">
+      <div className="w-full flex flex-col gap-1 pt-1.5 border-t border-ui-line">
+        <div className="flex items-center justify-between text-[9px] font-mono text-ui-muted px-1">
           <span>1800</span>
           <span className="hidden sm:inline">1850</span>
           <span>1900</span>
           <span className="hidden sm:inline">1950</span>
-          <span className="text-sky-400 font-bold">2000 (J2000)</span>
+          <span className="text-ui-accent font-bold">2000 (J2000)</span>
           <span className="hidden sm:inline">2050</span>
           <span>2100</span>
         </div>
@@ -418,13 +418,13 @@ export const TimelineControls: React.FC = () => {
             setSimulationDate(new Date(Number(event.target.value)));
           }}
           aria-label="Simulation date timeline scrubber"
-          className="w-full h-1.5 bg-zinc-800/90 rounded-lg appearance-none cursor-pointer accent-sky-400 hover:accent-sky-300 focus:outline-none"
+          className="w-full h-1.5 bg-ui-inset rounded-lg appearance-none cursor-pointer accent-sky-400 hover:accent-sky-300 focus:outline-none"
         />
       </div>
 
       {/* Error Notice */}
       {dateError && (
-        <p role="alert" className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1">
+        <p role="alert" className="text-xs text-ui-warning bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1">
           {dateError}
         </p>
       )}

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { SUN, CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
+import { BodyThumbnail } from './BodyThumbnail';
 
 const PLANET_BODIES = [
   SUN,
@@ -63,21 +64,21 @@ export const PlanetQuickDock: React.FC = () => {
   return (
     <aside
       aria-label="Quick body navigation"
-      className={`quick-dock glass-panel rounded-2xl p-1.5 border border-white/10 shadow-2xl pointer-events-auto backdrop-blur-xl transition-all duration-200 ${
+      className={`quick-dock glass-panel rounded-2xl p-1.5 border border-ui-line shadow-2xl pointer-events-auto backdrop-blur-xl transition-all duration-200 ${
         isCollapsed ? 'dock-collapsed' : 'dock-expanded'
       }`}
     >
       {/* Category selector & Collapse toggle (desktop) */}
-      <div className="dock-header pb-1 mb-1 border-b border-zinc-800/80 hidden sm:flex items-center justify-between gap-1 px-1">
+      <div className="dock-header pb-1.5 mb-1 border-b border-ui-line hidden sm:flex items-center justify-between gap-1 px-1">
         {!isCollapsed && (
-          <div className="dock-category-tabs flex items-center gap-0.5">
+          <div className="dock-category-tabs flex items-center gap-0.5 bg-ui-inset p-0.5 rounded-lg border border-ui-line/40">
             <button
               type="button"
               onClick={() => setCategory('planets')}
-              className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded transition-colors ${
+              className={`text-[10px] font-medium px-2 py-1 rounded-md transition-colors ${
                 category === 'planets'
-                  ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-400/40'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-ui-hover text-ui-accent font-semibold shadow-sm'
+                  : 'text-ui-muted hover:text-ui-primary'
               }`}
             >
               Fleet
@@ -85,10 +86,10 @@ export const PlanetQuickDock: React.FC = () => {
             <button
               type="button"
               onClick={() => setCategory('moons')}
-              className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded transition-colors ${
+              className={`text-[10px] font-medium px-2 py-1 rounded-md transition-colors ${
                 category === 'moons'
-                  ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-400/40'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-ui-hover text-ui-accent font-semibold shadow-sm'
+                  : 'text-ui-muted hover:text-ui-primary'
               }`}
             >
               Moons
@@ -96,10 +97,10 @@ export const PlanetQuickDock: React.FC = () => {
             <button
               type="button"
               onClick={() => setCategory('comets')}
-              className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded transition-colors ${
+              className={`text-[10px] font-medium px-2 py-1 rounded-md transition-colors ${
                 category === 'comets'
-                  ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-400/40'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-ui-hover text-ui-accent font-semibold shadow-sm'
+                  : 'text-ui-muted hover:text-ui-primary'
               }`}
             >
               Comets
@@ -112,7 +113,7 @@ export const PlanetQuickDock: React.FC = () => {
           onClick={() => setIsCollapsed(!isCollapsed)}
           title={isCollapsed ? 'Expand Fleet Dock' : 'Collapse Fleet Dock'}
           aria-label={isCollapsed ? 'Expand Fleet Dock' : 'Collapse Fleet Dock'}
-          className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800/80 transition-colors ml-auto shrink-0"
+          className="p-1.5 rounded-lg text-ui-muted hover:text-ui-primary hover:bg-ui-inset transition-colors ml-auto shrink-0 flex items-center justify-center"
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5" />
@@ -140,23 +141,17 @@ export const PlanetQuickDock: React.FC = () => {
                   : 'justify-start p-1.5 sm:p-2'
               } ${
                 isSelected
-                  ? 'bg-sky-500/25 border border-sky-400/80 shadow-glow-cyan'
-                  : 'hover:bg-white/10 border border-transparent'
+                  ? 'bg-ui-selected border border-ui-line shadow-glow-cyan'
+                  : 'hover:bg-ui-inset border border-transparent'
               }`}
               title={`${body.name} (${body.type})`}
               aria-label={`Focus ${body.name}`}
               aria-pressed={isSelected}
             >
-              {/* Color dot icon */}
-              <div
-                className={`w-3.5 h-3.5 rounded-full shrink-0 transition-transform group-hover:scale-125 ${
-                  isSelected ? 'scale-125 ring-2 ring-sky-400' : ''
-                }`}
-                style={{ backgroundColor: body.physical.color }}
-              />
+              <BodyThumbnail body={body} />
 
               {!isCollapsed && (
-                <span className="ml-2 text-[11px] font-medium text-zinc-200 group-hover:text-white">
+                <span className="ml-2 text-[11px] font-medium text-ui-primary group-hover:text-ui-primary">
                   {body.name}
                 </span>
               )}
