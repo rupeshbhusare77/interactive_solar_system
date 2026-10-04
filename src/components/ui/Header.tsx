@@ -79,6 +79,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
     setScaleMode,
     cameraMode,
     setCameraMode,
+    resetCamera,
     selectBody,
     viewToggles,
     toggleView,
@@ -130,11 +131,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
     setActiveIndex(-1);
     setIsSearchOpen(false);
     inputRef.current?.focus();
-  };
-
-  const handleResetCamera = () => {
-    selectBody(null);
-    setCameraMode('free');
   };
 
   const toggleFullscreen = () => {
@@ -520,7 +516,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
         {/* Reset Camera / Center Overview */}
         <button
           type="button"
-          onClick={handleResetCamera}
+          onClick={resetCamera}
           title="Reset camera to free heliocentric overview"
           aria-label="Reset camera to free overview"
           className="p-2 text-xs rounded-lg glass-button text-ui-secondary hover:text-ui-primary"

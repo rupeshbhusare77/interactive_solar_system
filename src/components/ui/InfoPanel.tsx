@@ -4,7 +4,7 @@
  * and comprehensive physical and orbital NASA specifications with comparative infographics.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BodyThumbnail } from './BodyThumbnail';
 import {
   X,
@@ -57,6 +57,19 @@ export const InfoPanel: React.FC = () => {
     setMoonQuery('');
     setActiveTab('overview');
   }, [selectedBodyId]);
+
+  const panelBodyRef = useRef<HTMLDivElement>(null);
+  const tabContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const panel = panelBodyRef.current;
+    const content = tabContentRef.current;
+    if (!panel || !content) return;
+    const padding = parseFloat(getComputedStyle(panel).paddingTop);
+    const top = activeTab === 'overview' ? 0
+      : content.getBoundingClientRect().top - panel.getBoundingClientRect().top + panel.scrollTop - padding;
+    panel.scrollTo({ top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }, [activeTab, selectedBodyId, isExpanded, isInfoOpen]);
 
   if (!isInfoOpen || !selectedBodyId) return null;
 
@@ -201,6 +214,8 @@ export const InfoPanel: React.FC = () => {
             <button
               key={tab.id}
               role="tab"
+              id={`info-tab-${tab.id}`}
+              aria-controls={`info-content-${tab.id}`}
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id as InfoTab)}
               className={`flex-1 py-1.5 px-2 rounded-t-lg flex items-center justify-center gap-1 font-medium transition-colors ${
@@ -219,6 +234,7 @@ export const InfoPanel: React.FC = () => {
       {/* Scrollable Content Body */}
       <div
         id="body-details"
+        ref={panelBodyRef}
         className="panel-body min-h-0 flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans"
       >
         {/* Quick Camera Navigation Action Buttons */}
@@ -259,7 +275,7 @@ export const InfoPanel: React.FC = () => {
         {childMoons.length>0 && <button className="glass-button rounded px-2 py-1" onClick={()=>setCameraMode('system')}>Explore Moon System</button>}
         {/* ================= TAB 1: OVERVIEW ================= */}
         {activeTab === 'overview' && (
-          <div className="info-tab-content space-y-3.5">
+          <div ref={tabContentRef} role="tabpanel" id={`info-content-${activeTab}`} aria-labelledby={`info-tab-${activeTab}`} className="info-tab-content space-y-3.5">
             {/* Earth Comparative Badges */}
             <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
               <div className="p-2 rounded-lg bg-ui-inset border border-ui-line">
@@ -338,7 +354,7 @@ export const InfoPanel: React.FC = () => {
 
         {/* ================= TAB 2: LIVE TELEMETRY ================= */}
         {activeTab === 'telemetry' && (
-          <div className="info-tab-content space-y-3.5">
+          <div ref={tabContentRef} role="tabpanel" id={`info-content-${activeTab}`} aria-labelledby={`info-tab-${activeTab}`} className="info-tab-content space-y-3.5">
             <div className="bg-ui-inset border border-ui-line rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between text-ui-muted font-mono text-[10px] uppercase tracking-wider border-b border-ui-line pb-1.5">
                 <span className="flex items-center gap-1.5 text-ui-accent font-bold">
@@ -422,7 +438,7 @@ export const InfoPanel: React.FC = () => {
 
         {/* ================= TAB 3: PHYSICAL & ATMOSPHERE ================= */}
         {activeTab === 'physical' && (
-          <div className="info-tab-content space-y-4">
+          <div ref={tabContentRef} role="tabpanel" id={`info-content-${activeTab}`} aria-labelledby={`info-tab-${activeTab}`} className="info-tab-content space-y-4">
             {/* Visual Temperature Gauge */}
             <div className="space-y-1.5 bg-ui-inset p-3 rounded-lg border border-ui-line">
               <div className="flex items-center justify-between text-[11px]">
@@ -530,7 +546,7 @@ export const InfoPanel: React.FC = () => {
 
         {/* ================= TAB 4: ORBIT & SCIENCE MODEL ================= */}
         {activeTab === 'orbital' && (
-          <div className="info-tab-content space-y-3.5">
+          <div ref={tabContentRef} role="tabpanel" id={`info-content-${activeTab}`} aria-labelledby={`info-tab-${activeTab}`} className="info-tab-content space-y-3.5">
             {/* Keplerian Elements Table */}
             {body.orbitalElements && (
               <div className="space-y-1.5">

@@ -28,6 +28,8 @@ export interface SimulationContextType {
   setScaleMode: (mode: ScaleMode) => void;
   cameraMode: CameraMode;
   setCameraMode: (mode: CameraMode) => void;
+  cameraResetVersion: number;
+  resetCamera: () => void;
   smoothCameraMotion: boolean;
   setSmoothCameraMotion: (smooth: boolean) => void;
 
@@ -59,8 +61,8 @@ const defaultToggles: ViewToggles = {
   showOrbits: true,
   showLabels: true,
   showHabitableZone: false,
-  showAsteroidBelt: false,
-  showKuiperBelt: false,
+  showAsteroidBelt: true,
+  showKuiperBelt: true,
   showMoons: true,
   showLighting: true,
   showDistanceGrid: false,
@@ -89,6 +91,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(86400 * 3);
   const [scaleMode, setScaleMode] = useState<ScaleMode>('educational');
   const [cameraMode, setCameraMode] = useState<CameraMode>('free');
+  const [cameraResetVersion, setCameraResetVersion] = useState(0);
   const [smoothCameraMotion, setSmoothCameraMotion] = useState(() => !matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [selectionVersion, setSelectionVersion] = useState(0);
 
@@ -182,8 +185,16 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
       setIsInfoOpen(true);
       updateIsMeasurementOpen(false);
+    } else {
+      setCameraMode('free');
+      setIsInfoOpen(false);
     }
   }, []);
+
+  const resetCamera = useCallback(() => {
+    selectBody(null);
+    setCameraResetVersion(version => version + 1);
+  }, [selectBody]);
 
   const toggleView = useCallback((key: keyof ViewToggles) => {
     setViewToggles((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -208,6 +219,8 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setScaleMode,
         cameraMode,
         setCameraMode,
+        cameraResetVersion,
+        resetCamera,
         smoothCameraMotion,
         setSmoothCameraMotion,
         selectionVersion,
