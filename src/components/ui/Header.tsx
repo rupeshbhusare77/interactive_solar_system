@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { CELESTIAL_BODIES } from '../../astronomy/celestialData';
+import { BodyThumbnail } from './BodyThumbnail';
 import { ScaleMode, CameraMode } from '../../astronomy/types';
 
 interface HeaderProps {
@@ -26,8 +27,8 @@ interface HeaderProps {
 }
 
 const SCALE_OPTIONS: { value: ScaleMode; label: string; desc: string }[] = [
-  { value: 'educational', label: 'Educational', desc: 'Inner clearance & calibrated sizes' },
-  { value: 'hybrid', label: 'Hybrid', desc: 'Logarithmic orbits & balanced sizes' },
+  { value: 'educational', label: 'Educational', desc: 'Larger bodies; gently compressed orbit spacing' },
+  { value: 'hybrid', label: 'Hybrid', desc: 'Smaller bodies; logarithmic compression of outer orbits' },
   { value: 'real', label: 'Real (1:1)', desc: 'True astronomical dimensions' },
 ];
 
@@ -81,6 +82,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
     selectBody,
     viewToggles,
     toggleView,
+    smoothCameraMotion,
+    setSmoothCameraMotion,
   } = useSimulation();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -334,10 +337,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
-                        style={{ backgroundColor: body.physical.color }}
-                      />
+                      <BodyThumbnail body={body} />
                       <span className="font-medium">
                         {highlightMatch(body.name, query)}
                       </span>
@@ -432,6 +432,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                   </button>
                 );
               })}
+              <p className="px-2.5 py-2 text-[10px] text-ui-muted">Compare orbit spacing in Free Orbit or Top View. Close-ups keep the selected body framed.</p>
             </div>
           )}
         </div>
@@ -587,6 +588,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
               <div className="px-3 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Scene Overlays
               </div>
+              <button type="button" aria-pressed={smoothCameraMotion}
+                onClick={() => setSmoothCameraMotion(!smoothCameraMotion)}
+                className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-ui-inset">
+                <span>Smooth camera transitions</span>
+                {smoothCameraMotion && <Check aria-hidden="true" className="w-4 h-4 text-ui-accent" />}
+              </button>
               {[
                 { key: 'showOrbits', label: 'Orbit paths' },
                 { key: 'showLabels', label: 'Celestial labels' },
@@ -706,6 +713,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           </div>
 
           {/* Camera selection */}
+          <p className="text-[11px] text-ui-muted">{activeScale.desc}. Compare orbit spacing in Free Orbit or Top View; close-ups keep the selected body framed.</p>
           <div>
             <div className="text-[10px] font-mono uppercase text-ui-muted mb-1.5 flex items-center gap-1.5">
               <Camera className="w-3 h-3 text-ui-accent" /> Camera Angle

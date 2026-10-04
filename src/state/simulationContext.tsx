@@ -28,9 +28,12 @@ export interface SimulationContextType {
   setScaleMode: (mode: ScaleMode) => void;
   cameraMode: CameraMode;
   setCameraMode: (mode: CameraMode) => void;
+  smoothCameraMotion: boolean;
+  setSmoothCameraMotion: (smooth: boolean) => void;
 
   // Body selection & navigation
   selectedBodyId: string | null;
+  selectionVersion: number;
   selectBody: (id: string | null) => void;
   hoveredBodyId: string | null;
   setHoveredBodyId: (id: string | null) => void;
@@ -86,6 +89,8 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(86400 * 3);
   const [scaleMode, setScaleMode] = useState<ScaleMode>('educational');
   const [cameraMode, setCameraMode] = useState<CameraMode>('free');
+  const [smoothCameraMotion, setSmoothCameraMotion] = useState(() => !matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [selectionVersion, setSelectionVersion] = useState(0);
 
   const [selectedBodyId, setSelectedBodyId] = useState<string | null>('earth');
   const [hoveredBodyId, setHoveredBodyId] = useState<string | null>(null);
@@ -170,6 +175,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const selectBody = useCallback((id: string | null) => {
     setSelectedBodyId(id);
     if (id) {
+      setSelectionVersion(version => version + 1);
       setCameraMode('focus');
       if (CELESTIAL_BODY_MAP.get(id)?.type === 'moon') {
         setViewToggles(previous => ({ ...previous, showMoons: true }));
@@ -202,6 +208,9 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setScaleMode,
         cameraMode,
         setCameraMode,
+        smoothCameraMotion,
+        setSmoothCameraMotion,
+        selectionVersion,
         selectedBodyId,
         selectBody,
         hoveredBodyId,

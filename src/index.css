@@ -776,6 +776,10 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .eclipse-status { text-align: center; font-weight: 600; }
 .eclipse-playback { display: flex; align-items: center; gap: 10px; }
 .eclipse-playback input { flex: 1; min-width: 0; accent-color: var(--ui-accent); }
+.eclipse-view-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.eclipse-view-tabs button { flex: 1; min-height: 36px; border-radius: 10px; padding: 6px 10px; }
+.eclipse-view-tabs button[aria-pressed="true"] { background: var(--ui-accent-soft); color: var(--ui-accent); }
+.eclipse-restart { padding: 6px 12px; margin-top: 10px; border-radius: 10px; }
 
 @media (max-width: 767px) {
   :root { --mobile-dock-height: 86px; }
@@ -796,4 +800,19 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
     bottom: calc(var(--timeline-height) + var(--mobile-dock-height) + 1.5rem + env(safe-area-inset-bottom));
     max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - var(--mobile-dock-height) - 2rem);
   }
+  .info-panel[data-expanded="true"] {
+    top: calc(var(--header-height) + .5rem);
+    bottom: calc(var(--timeline-height) + 1rem + env(safe-area-inset-bottom));
+    max-height: none;
+    z-index: 35;
+  }
 }
+@media (max-height: 520px) {
+  .info-panel[data-expanded="true"] {
+    top: calc(var(--header-height) + .5rem);
+    bottom: max(.5rem, env(safe-area-inset-bottom));
+    max-height: none;
+    z-index: 35;
+  }
+}
+.info-panel .panel-body { overscroll-behavior: contain; }

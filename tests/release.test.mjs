@@ -29,6 +29,49 @@ registerHooks({
 const { dateToJulianDate, solveKepler, resolveBodyPosition, distanceBetween } = await import('../src/astronomy/kepler.ts');
 const { bodyViewRadius, fitViewDistance } = await import('../src/astronomy/viewBounds.ts');
 const { CELESTIAL_BODIES } = await import('../src/astronomy/celestialData.ts');
+const { eclipseGeometry } = await import('../src/astronomy/eclipseGeometry.ts');
+const { cameraProgress } = await import('../src/components/canvas/cameraMotion.ts');
+const { scalePosition, scaleRadius } = await import('../src/astronomy/scaling.ts');
+
+test('educational and hybrid visibly differ while physical coordinates stay unchanged', () => {
+  const earth = { x: 1, y: 0, z: 0 }, neptune = { x: 30, y: 0, z: 0 };
+  assert.equal(scalePosition(earth, 'educational').x, 25);
+  assert(Math.abs(scalePosition(earth, 'hybrid').x - 34.657359) < .000001);
+  assert(scalePosition(neptune, 'hybrid').x < scalePosition(neptune, 'educational').x * .6);
+  assert.equal(scaleRadius(6371, 'planet', 'educational', 'earth'), 1.6);
+  assert.equal(scaleRadius(6371, 'planet', 'hybrid', 'earth'), 1.36);
+  const date = new Date('2026-10-03T00:00:00Z');
+  assert.deepEqual(resolveBodyPosition('earth', date, 'hybrid').physicalAU, resolveBodyPosition('earth', date, 'educational').physicalAU);
+});
+
+test('camera easing starts at the current pose and advances continuously', () => {
+  assert.equal(cameraProgress(0), 0);
+  assert.equal(cameraProgress(1.6), 1);
+  let previous = 0;
+  for (let elapsed = 0; elapsed <= 1.6; elapsed += .016) {
+    const progress = cameraProgress(elapsed);
+    assert(progress >= previous && progress - previous < .025);
+    previous = progress;
+  }
+  assert(cameraProgress(.016) < .001);
+  assert(cameraProgress(.8) > .49 && cameraProgress(.8) < .51);
+});
+
+test('eclipse geometry distinguishes solar totality, annularity, and lunar shadows', () => {
+  assert.equal(eclipseGeometry('solar', false, 50).status, 'Totality');
+  assert.equal(eclipseGeometry('solar', true, 50).status, 'Annularity');
+  assert.equal(eclipseGeometry('lunar', false, 50).status, 'Totality');
+  for (const type of ['solar', 'lunar']) {
+    assert.equal(eclipseGeometry(type, false, 0).status, 'Before or after eclipse');
+    assert.equal(eclipseGeometry(type, false, 100).status, 'Before or after eclipse');
+    assert.match(eclipseGeometry(type, false, 65).status, /Partial|Penumbral/);
+  }
+  const total = eclipseGeometry('solar', false, 50);
+  const annular = eclipseGeometry('solar', true, 50);
+  assert(total.umbraLength > total.moonDistance);
+  assert(annular.umbraLength < annular.moonDistance);
+  assert(eclipseGeometry('lunar', false, 50).umbraRadius > 1737.4);
+});
 
 test('J2000, eccentric Kepler solutions, and physical moon positions', () => {
   assert.equal(dateToJulianDate(new Date('2000-01-01T12:00:00Z')), 2451545);
