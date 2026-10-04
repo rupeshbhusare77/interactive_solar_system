@@ -259,7 +259,7 @@ export const InfoPanel: React.FC = () => {
         {childMoons.length>0 && <button className="glass-button rounded px-2 py-1" onClick={()=>setCameraMode('system')}>Explore Moon System</button>}
         {/* ================= TAB 1: OVERVIEW ================= */}
         {activeTab === 'overview' && (
-          <div className="space-y-3.5">
+          <div className="info-tab-content space-y-3.5">
             {/* Earth Comparative Badges */}
             <div className="grid grid-cols-3 gap-1.5 text-center font-mono">
               <div className="p-2 rounded-lg bg-ui-inset border border-ui-line">
@@ -338,7 +338,7 @@ export const InfoPanel: React.FC = () => {
 
         {/* ================= TAB 2: LIVE TELEMETRY ================= */}
         {activeTab === 'telemetry' && (
-          <div className="space-y-3.5">
+          <div className="info-tab-content space-y-3.5">
             <div className="bg-ui-inset border border-ui-line rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between text-ui-muted font-mono text-[10px] uppercase tracking-wider border-b border-ui-line pb-1.5">
                 <span className="flex items-center gap-1.5 text-ui-accent font-bold">
@@ -422,7 +422,7 @@ export const InfoPanel: React.FC = () => {
 
         {/* ================= TAB 3: PHYSICAL & ATMOSPHERE ================= */}
         {activeTab === 'physical' && (
-          <div className="space-y-4">
+          <div className="info-tab-content space-y-4">
             {/* Visual Temperature Gauge */}
             <div className="space-y-1.5 bg-ui-inset p-3 rounded-lg border border-ui-line">
               <div className="flex items-center justify-between text-[11px]">
@@ -530,7 +530,7 @@ export const InfoPanel: React.FC = () => {
 
         {/* ================= TAB 4: ORBIT & SCIENCE MODEL ================= */}
         {activeTab === 'orbital' && (
-          <div className="space-y-3.5">
+          <div className="info-tab-content space-y-3.5">
             {/* Keplerian Elements Table */}
             {body.orbitalElements && (
               <div className="space-y-1.5">

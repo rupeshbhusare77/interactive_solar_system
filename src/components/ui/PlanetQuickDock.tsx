@@ -37,7 +37,7 @@ const MOON_BODIES = [
 const COMET_BODIES = [
   CELESTIAL_BODY_MAP.get('halley')!,
   CELESTIAL_BODY_MAP.get('encke')!,
-  CELESTIAL_BODY_MAP.get('hale-bopp')!,
+  CELESTIAL_BODY_MAP.get('halebopp')!,
 ].filter(Boolean);
 
 type DockCategory = 'planets' | 'moons' | 'comets';
@@ -70,7 +70,7 @@ export const PlanetQuickDock: React.FC = () => {
     >
       {/* Category selector & Collapse toggle (desktop) */}
       <div className="dock-header pb-1.5 mb-1 border-b border-ui-line hidden sm:flex items-center justify-between gap-1 px-1">
-        {!isCollapsed && (
+        {(
           <div className="dock-category-tabs flex items-center gap-0.5 bg-ui-inset p-0.5 rounded-lg border border-ui-line/40">
             <button
               type="button"
@@ -150,7 +150,7 @@ export const PlanetQuickDock: React.FC = () => {
             >
               <BodyThumbnail body={body} />
 
-              {!isCollapsed && (
+              {(
                 <span className="ml-2 text-[11px] font-medium text-ui-primary group-hover:text-ui-primary">
                   {body.name}
                 </span>

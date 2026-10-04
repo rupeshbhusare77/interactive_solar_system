@@ -16,7 +16,8 @@ import {
   Check,
 } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
-import { HISTORIC_EVENTS } from '../../astronomy/constants';
+import { HISTORIC_EVENTS, type HistoricEvent } from '../../astronomy/constants';
+import { EclipseViewer } from './EclipseViewer';
 import { dateToJulianDate } from '../../astronomy/kepler';
 import {
   SIMULATION_MIN_DATE,
@@ -55,6 +56,8 @@ export const TimelineControls: React.FC = () => {
   const [isSpeedOpen, setIsSpeedOpen] = useState(false);
   const [isEventsOpen, setIsEventsOpen] = useState(false);
   const [isDateOpen, setIsDateOpen] = useState(false);
+  const [selectedEclipse, setSelectedEclipse] = useState<HistoricEvent | null>(null);
+  const eventsButtonRef = useRef<HTMLButtonElement>(null);
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -270,6 +273,7 @@ export const TimelineControls: React.FC = () => {
                 setIsDateOpen(false);
               }}
               aria-label="Historic astronomical events"
+              ref={eventsButtonRef}
               aria-expanded={isEventsOpen}
               aria-controls={eventsMenuId}
               className={`glass-button px-2.5 py-1 text-xs rounded-lg flex items-center gap-1 text-ui-warning hover:text-ui-primary ${
@@ -286,7 +290,7 @@ export const TimelineControls: React.FC = () => {
                 className="timeline-popover glass-panel rounded-xl p-2 space-y-1.5 z-50 text-xs border border-ui-line shadow-2xl max-w-sm"
               >
                 <div className="px-2 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line flex items-center justify-between">
-                  <span>Historic Mission Milestones</span>
+                  <span>Astronomical Events</span>
                   <span className="text-ui-muted">Pauses simulation</span>
                 </div>
                 {HISTORIC_EVENTS.map((event) => (
@@ -298,6 +302,7 @@ export const TimelineControls: React.FC = () => {
                       selectBody(event.focusBodyId);
                       setCameraMode('focus');
                       setIsEventsOpen(false);
+                      if (event.eclipseType) setSelectedEclipse(event);
                     }}
                     className="w-full text-left p-2 rounded-lg glass-button hover:bg-ui-inset transition-colors flex flex-col gap-0.5"
                   >
@@ -428,6 +433,10 @@ export const TimelineControls: React.FC = () => {
           {dateError}
         </p>
       )}
+      <EclipseViewer event={selectedEclipse} onClose={() => {
+        setSelectedEclipse(null);
+        eventsButtonRef.current?.focus();
+      }} />
     </div>
   );
 };
