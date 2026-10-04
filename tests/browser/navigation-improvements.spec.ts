@@ -1,0 +1,72 @@
+import { test, expect } from '@playwright/test';
+
+for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 667, height: 375 }]) {
+  test(`mobile categories and events remain usable at ${viewport.width}`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto('./');
+    await page.getByRole('button', { name: 'Reset date to now', exact: true }).click();
+    await page.getByRole('button', { name: 'Close telemetry panel', exact: true }).click();
+    const dock = page.getByRole('complementary', { name: 'Quick body navigation' });
+    await dock.getByRole('button', { name: 'Moons', exact: true }).click();
+    await dock.getByRole('button', { name: 'Focus Moon', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Moon', exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('moon-navigation.png') });
+    await page.getByRole('button', { name: 'Close telemetry panel', exact: true }).click();
+    await dock.getByRole('button', { name: 'Comets', exact: true }).click();
+    await expect(dock.getByRole('button', { name: /Hale-Bopp/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Historic astronomical events', exact: true }).click();
+    const popup = page.locator('.timeline-popover');
+    const bounds = (await popup.boundingBox())!;
+    const header = (await page.locator('.app-header').boundingBox())!;
+    expect(bounds.y).toBeGreaterThanOrEqual(header.y + header.height);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+    const eclipse = popup.getByRole('button', { name: /Total Solar Eclipse 2024/ });
+    await eclipse.scrollIntoViewIfNeeded();
+    await eclipse.click();
+    const viewer = page.getByRole('dialog', { name: 'Total Solar Eclipse 2024' });
+    await expect(viewer).toBeVisible();
+    await expect(viewer.getByText(/Illustrative/)).toBeVisible();
+    await expect(viewer.getByRole('status')).toContainText('Totality');
+    await page.screenshot({ path: testInfo.outputPath('solar-eclipse.png') });
+    await viewer.getByLabel('Eclipse phase').press('End');
+    await expect(viewer.getByRole('status')).toContainText('Before or after');
+    await page.keyboard.press('Escape');
+    await expect(viewer).not.toBeVisible();
+    await page.getByRole('button', { name: 'Historic astronomical events', exact: true }).click();
+    await popup.getByRole('button', { name: /Total Lunar Eclipse 2025/ }).first().click();
+    await expect(page.getByRole('dialog', { name: /Total Lunar Eclipse 2025/ })).toBeVisible();
+  });
+}
+
+test('camera flies to selection and keeps manual zoom in follow mode', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('./');
+  await page.getByRole('button', { name: 'Reset date to now', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Loading scene assets' })).not.toBeVisible();
+  await page.waitForTimeout(1800);
+  const search = page.getByRole('combobox', { name: 'Search celestial bodies' });
+  await search.fill('Earth');
+  await search.press('ArrowDown');
+  await search.press('Enter');
+  const scene = page.locator('canvas').locator('..').locator('..');
+  const label = scene.getByText('Earth', { exact: true });
+  await page.waitForTimeout(120);
+  const moving = (await label.boundingBox())!;
+  await page.waitForTimeout(1800);
+  const arrived = (await label.boundingBox())!;
+  expect(Math.hypot(moving.x - arrived.x, moving.y - arrived.y)).toBeGreaterThan(10);
+  await page.getByRole('button', { name: 'Camera tracking mode' }).click();
+  await page.getByRole('option', { name: /^Lock & Follow/ }).click();
+  await page.waitForTimeout(1800);
+  const beforeZoom = (await label.boundingBox())!;
+  await page.mouse.move(800, 400);
+  await page.mouse.wheel(0, -500);
+  await page.waitForTimeout(1100);
+  const zoomed = (await label.boundingBox())!;
+  expect(Math.abs(zoomed.y - beforeZoom.y)).toBeGreaterThan(5);
+  await page.waitForTimeout(800);
+  const retained = (await label.boundingBox())!;
+  expect(Math.abs(retained.y - zoomed.y)).toBeLessThan(3);
+  await expect(page.getByRole('alert', { name: 'Scene recovery' })).not.toBeVisible();
+});
