@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { BodyThumbnail } from './BodyThumbnail';
 import {
   X,
   Compass,
@@ -151,10 +152,7 @@ export const InfoPanel: React.FC = () => {
         className="px-4 py-3 border-b border-ui-line flex items-center justify-between"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div
-            className="w-3.5 h-3.5 rounded-full shadow-md shrink-0"
-            style={{ backgroundColor: body.physical.color }}
-          />
+          <BodyThumbnail body={body} />
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <h2 className="text-base font-bold text-ui-primary tracking-wide">
               {body.name}

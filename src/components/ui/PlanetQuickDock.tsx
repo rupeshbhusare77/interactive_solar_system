@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSimulation } from '../../state/simulationContext';
 import { SUN, CELESTIAL_BODY_MAP } from '../../astronomy/celestialData';
+import { BodyThumbnail } from './BodyThumbnail';
 
 const PLANET_BODIES = [
   SUN,
@@ -147,13 +148,7 @@ export const PlanetQuickDock: React.FC = () => {
               aria-label={`Focus ${body.name}`}
               aria-pressed={isSelected}
             >
-              {/* Color dot icon */}
-              <div
-                className={`w-3.5 h-3.5 rounded-full shrink-0 transition-transform group-hover:scale-125 ${
-                  isSelected ? 'scale-125 ring-2 ring-sky-400' : ''
-                }`}
-                style={{ backgroundColor: body.physical.color }}
-              />
+              <BodyThumbnail body={body} />
 
               {!isCollapsed && (
                 <span className="ml-2 text-[11px] font-medium text-ui-primary group-hover:text-ui-primary">
