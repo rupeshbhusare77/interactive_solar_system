@@ -13,6 +13,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        ui: {
+          primary: 'var(--ui-primary)',
+          secondary: 'var(--ui-secondary)',
+          muted: 'var(--ui-muted)',
+          accent: 'var(--ui-accent)',
+          selected: 'var(--ui-accent-soft)',
+          inset: 'var(--ui-inset)',
+          hover: 'var(--ui-hover)',
+          line: 'var(--ui-line)',
+          warning: 'var(--ui-warning)',
+          success: 'var(--ui-success)',
+          purple: 'var(--ui-purple)',
+        },
         space: {
           950: '#030712',
           900: '#0b0f19',
@@ -26,7 +39,7 @@ export default {
       },
       fontFamily: {
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
         'glow-cyan': '0 0 25px rgba(56, 189, 248, 0.4)',
