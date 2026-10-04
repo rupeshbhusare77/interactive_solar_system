@@ -294,8 +294,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           )}
 
           {/* Search Popup */}
-          {(
-            <div hidden={!isSearchOpen} {...(!isSearchOpen ? { inert: '' } : {})} className="ui-disclosure header-search-popup absolute top-full left-0 right-0 mt-1 py-1 glass-panel rounded-xl border border-ui-line shadow-2xl z-50 max-h-72 overflow-y-auto">
+          {isSearchOpen && (
+            <div className="header-search-popup absolute top-full left-0 right-0 mt-1 py-1 glass-panel rounded-xl border border-ui-line shadow-2xl z-50 max-h-72 overflow-y-auto">
               <div
                 id={`${searchId}-results`}
                 role="listbox"
@@ -395,12 +395,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
             />
           </button>
 
-          {(
-            <div hidden={!isScaleOpen} {...(!isScaleOpen ? { inert: '' } : {})}
+          {isScaleOpen && (
+            <div
               id={scaleId}
               role="listbox"
               aria-label="Display scale options"
-              className="ui-disclosure absolute left-0 mt-1.5 w-60 glass-panel rounded-xl border border-ui-line shadow-2xl p-1 z-50 text-xs"
+              className="absolute left-0 mt-1.5 w-60 glass-panel rounded-xl border border-ui-line shadow-2xl p-1 z-50 text-xs"
             >
               <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Display Scale
@@ -475,12 +475,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
             />
           </button>
 
-          {(
-            <div hidden={!isCameraOpen} {...(!isCameraOpen ? { inert: '' } : {})}
+          {isCameraOpen && (
+            <div
               id={cameraId}
               role="listbox"
               aria-label="Camera modes"
-              className="ui-disclosure absolute left-0 mt-1.5 w-56 glass-panel rounded-xl border border-ui-line shadow-2xl p-1 z-50 text-xs"
+              className="absolute left-0 mt-1.5 w-56 glass-panel rounded-xl border border-ui-line shadow-2xl p-1 z-50 text-xs"
             >
               <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Camera Mode
@@ -578,12 +578,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
             <ChevronDown aria-hidden="true" className="w-3 h-3 text-ui-muted" />
           </button>
 
-          {(
-            <div hidden={!isViewMenuOpen} {...(!isViewMenuOpen ? { inert: '' } : {})}
+          {isViewMenuOpen && (
+            <div
               id={layersId}
               role="group"
               aria-label="Visual layers"
-              className="ui-disclosure header-layers-popup absolute right-0 mt-1.5 w-56 glass-panel rounded-xl border border-ui-line shadow-2xl py-1.5 z-50 text-xs"
+              className="header-layers-popup absolute right-0 mt-1.5 w-56 glass-panel rounded-xl border border-ui-line shadow-2xl py-1.5 z-50 text-xs"
             >
               <div className="px-3 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Scene Overlays
@@ -678,15 +678,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
       </div>
 
       {/* Mobile Settings & View Drawer */}
-      {(
-        <div hidden={!isMobileMenuOpen} {...(!isMobileMenuOpen ? { inert: '' } : {})} ref={mobileMenuRef} id={mobileId} role="region" aria-label="Display settings"
+      {isMobileMenuOpen && (
+        <div ref={mobileMenuRef} id={mobileId} role="region" aria-label="Display settings"
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
               setIsMobileMenuOpen(false);
               mobileButtonRef.current?.focus();
             }
           }}
-          className="ui-disclosure mobile-settings md:hidden p-3 glass-panel rounded-2xl border border-ui-line shadow-2xl flex flex-col gap-3 text-xs z-50">
+          className="mobile-settings md:hidden p-3 glass-panel rounded-2xl border border-ui-line shadow-2xl flex flex-col gap-3 text-xs z-50">
           {/* Scale selection */}
           <div>
             <div className="text-[10px] font-mono uppercase text-ui-muted mb-1.5 flex items-center gap-1.5">

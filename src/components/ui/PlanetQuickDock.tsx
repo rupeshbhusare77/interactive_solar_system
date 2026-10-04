@@ -50,7 +50,7 @@ export const PlanetQuickDock: React.FC = () => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--preferred-dock-width',
-      isCollapsed ? '3.25rem' : '12rem'
+      isCollapsed ? '3.25rem' : '10rem'
     );
   }, [isCollapsed]);
 
@@ -74,7 +74,6 @@ export const PlanetQuickDock: React.FC = () => {
           <div className="dock-category-tabs flex items-center gap-0.5 bg-ui-inset p-0.5 rounded-lg border border-ui-line/40">
             <button
               type="button"
-              aria-pressed={category === 'planets'}
               onClick={() => setCategory('planets')}
               className={`text-[10px] font-medium px-2 py-1 rounded-md transition-colors ${
                 category === 'planets'
@@ -86,7 +85,6 @@ export const PlanetQuickDock: React.FC = () => {
             </button>
             <button
               type="button"
-              aria-pressed={category === 'moons'}
               onClick={() => setCategory('moons')}
               className={`text-[10px] font-medium px-2 py-1 rounded-md transition-colors ${
                 category === 'moons'
@@ -98,7 +96,6 @@ export const PlanetQuickDock: React.FC = () => {
             </button>
             <button
               type="button"
-              aria-pressed={category === 'comets'}
               onClick={() => setCategory('comets')}
               className={`text-[10px] font-medium px-2 py-1 rounded-md transition-colors ${
                 category === 'comets'
@@ -127,8 +124,7 @@ export const PlanetQuickDock: React.FC = () => {
       </div>
 
       {/* Body List */}
-      <div key={category}
-        className="dock-body-list flex flex-col gap-0.5 sm:gap-1 overflow-y-auto overflow-x-hidden flex-1">
+      <div className="dock-body-list flex flex-col gap-0.5 sm:gap-1 overflow-y-auto overflow-x-hidden flex-1">
         {bodies.map((body) => {
           const isSelected = selectedBodyId === body.id;
 
