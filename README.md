@@ -1,240 +1,90 @@
 # Interactive Solar System
 
-A browser-based 3D solar system simulator built with React, TypeScript, and Three.js. Explore celestial bodies, control simulation time, compare display scales, and inspect orbital and physical properties through an interactive space-themed interface.
+RxSolar is a browser-based 3D solar system simulator built with React, TypeScript, and Three.js. Select celestial bodies, control simulation time, inspect orbital data, and measure distances across the solar system.
 
-![Paused inner-system overview at October 3, 2026 UTC](docs/images/overview.png)
+![RxSolar showing the inner planets, body inspector, radar, and timeline](docs/images/overview.png)
 
 ## Features
 
-- Explore the Sun, eight planets, five dwarf planets, 15 moons, and three comets.
-- Calculate orbital positions using Kepler's equation, explicit catalog epochs, and fixed orbital elements.
-- Play, pause, reverse, and step through simulation time, with speed presets from real time to ten simulated years per second.
-- Choose a date or jump to historical event dates.
-- Switch between educational, hybrid, and real display scales.
-- Navigate with free, focus, follow, top, and ecliptic camera modes.
-- Search for celestial bodies and inspect their physical properties and orbital telemetry.
-- Measure physical distances and light-travel times between catalog bodies, including parent-relative moons.
-- Toggle orbit paths, labels, moons, lighting, the habitable zone, asteroid and Kuiper belts, and a distance grid.
-- View planetary textures, atmospheric glow, Earth clouds and night lights, planetary rings, and comet tails.
-- Use an orbital radar to locate and focus on major planets.
+- **Body navigation:** planets, dwarf planets, moons, and comets, with search, textured thumbnails, moon filters, and satellite-system views.
+- **Camera controls:** Free Orbit, Focus, Lock & Follow, Moon System, Top View, and Ecliptic views. Camera flights start from the current view and preserve manual zoom after arrival.
+- **Time controls:** UTC dates from 1800 to 2100, playback speeds, reverse motion, day stepping, and mission and astronomical event presets.
+- **Measurements and telemetry:** physical distances, light-travel times, orbital properties, and body-specific source and accuracy information.
+- **Eclipse models:** solar, annular, and lunar eclipses with shadow alignment and observer views, a phase slider, and play/pause controls.
+- **Scene layers:** orbit paths, celestial labels, moons, lighting, the habitable zone, belts, a distance grid, and an orbital radar.
+- **Responsive interface:** translucent panels, light and dark themes, keyboard-accessible controls, and layouts for desktop, tablet, and mobile.
 
-## Technology
+The app runs entirely in the browser. No backend, database, or API key is required. Scientific data and textures load from bundled assets; simulation state resets when the page reloads.
 
-| Layer | Tools |
-| --- | --- |
-| Application | React 18, TypeScript |
-| 3D rendering | Three.js, React Three Fiber, Drei |
-| Styling | Tailwind CSS 4, PostCSS |
-| Icons | Lucide React |
-| Development and builds | Vite |
+## Run locally
 
-The application runs in the browser without a backend or database. Simulation state is held in memory and resets when the page reloads. Texture assets are included in the repository. The interface uses system fonts and follows the device's light or dark appearance, reduced motion, reduced transparency, and increased contrast preferences.
-
-## Getting started
-
-You need Node.js 24 LTS and npm, plus a modern browser with WebGL 2. Use the version in .nvmrc. Styling requires Chrome 111+, Safari 16.4+, or Firefox 128+.
+Use **Node.js 24** (see [.nvmrc](.nvmrc)), npm, and a browser with WebGL 2 support.
 
 ```bash
-git clone https://github.com/rupeshbhusare77/interactive_solar_system.git
+git clone --branch dev https://github.com/rupeshbhusare77/interactive_solar_system.git
 cd interactive_solar_system
 npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite, normally `http://localhost:5173`. Access to the repository is required to clone it while it is private.
+Open the URL printed by Vite, normally `http://localhost:5173`.
 
-### Production build
+## Controls
+
+| Action | Control |
+| --- | --- |
+| Orbit the camera | Left-drag or one-finger drag |
+| Pan | Right-drag or two-finger drag |
+| Zoom | Mouse wheel or pinch |
+| Select and focus | Click a body, choose a search result, or use the body dock |
+| Inspect a body | Use the information panel; tap **Details** on mobile |
+| Change time | Use the bottom timeline, **Date**, or **Events** |
+| Change the scene | Use **Layers**, the scale selector, and camera modes; open settings on mobile |
+
+The initial view uses Educational scale and Free Orbit, with Earth selected. Playback starts at three simulated days per real second. Pause before comparing dates or measurements. **Help** contains the in-app guide.
+
+Camera animation initially follows the device's reduced-motion preference. Enable or disable **Layers → Smooth camera transitions** to override it.
+
+## Display scales
+
+| Mode | Display behavior |
+| --- | --- |
+| Educational | Larger calibrated bodies and gently compressed orbital distances. |
+| Hybrid | Smaller bodies and logarithmic spacing that compresses outer orbits more strongly. |
+| Real (1:1) | Body radii and distances use the same physical conversion: 250 scene units per AU. |
+
+Compare spacing in Free Orbit or Top View. Focus and Follow frame the selected body, so close-ups can look similar across scales. Real-scale bodies are very small compared with their orbital distances; use Focus to inspect them. Numerical measurements always use physical coordinates, independent of display scale.
+
+## Build and test
 
 ```bash
 npm run build
 npm run preview
 ```
 
-The build command checks TypeScript and generates the production site in `dist/`. The preview command serves that build locally. An alternative local server is available through `node serve.js` after building.
+The build checks TypeScript and writes the production site to `dist/`. Preview serves it locally on port 5173. The included `wrangler.json` configures Cloudflare Workers Static Assets to serve this directory. Use the root build above for that deployment.
 
-Development, preview, and the custom server are configured to use port 5173. Run one server at a time. Uploading the repository to GitHub stores the source code; hosting the live application requires a separate deployment.
-
-## Controls
-
-| Action | Control |
-| --- | --- |
-| Rotate the camera | Left-click and drag |
-| Pan the camera | Right-click and drag |
-| Zoom | Mouse wheel or pinch gesture |
-| Select a body | Click its surface or use the search field |
-| Focus on a body | Use the quick dock or a focus action |
-| Change the viewpoint | Use the camera mode selector |
-| Control time | Use the bottom timeline controls |
-| Change display options | Use the header's view controls |
-| Inspect measurements | Open the measurement panel |
-| Read the in-app guide | Open Help |
-
-The simulation initially plays at three simulated days per real second, with Earth selected and educational scale enabled.
-
-## Display scales
-
-| Mode | Behavior |
-| --- | --- |
-| Educational | Compresses orbital distances and uses calibrated body sizes for easier exploration. |
-| Hybrid | Uses logarithmic distance compression with slightly smaller calibrated body sizes. |
-| Real | Uses a consistent physical conversion for orbital distances and spherical body radii: 250 world units per AU. |
-
-In real mode, planets are tiny compared with the distances between them. Use Focus to inspect individual bodies. Labels, decorative effects, the distance grid, and belt particle sizes remain illustrative.
-
-## Project structure
-
-```text
-public/textures/          Local planetary and sky texture assets
-src/
-  astronomy/             Body catalog, constants, orbital calculations, and scaling
-  components/
-    canvas/              3D bodies, orbits, effects, belts, and camera controls
-    ui/                  Header, timeline, information panel, radar, and help
-  state/                 Shared simulation state and React context
-  textures/              Texture loading and procedural texture generation
-  App.tsx                Scene and interface composition
-  main.tsx               React entry point
-  index.css              Global styles and shared interface effects
-serve.js                 Optional local server for the production build
-```
-
-## Verification
-
-Run `npm run build` to check TypeScript and production bundling. Browser verification is needed for visual and interaction changes. A minimal regression suite was restored with the owner's approval for Stage 4. Run npm test for astronomy and static-server checks. Browser regressions run against a fixed UTC date, paused clock, and seeded generated assets.
-
-## Scientific scope and known limitations
-
-This project is an educational visualization using fixed orbital elements. It does not model gravitational interactions between bodies, orbital perturbations, or a live precision ephemeris. Historical presets select dates and bodies; they do not recreate spacecraft missions or guarantee observed alignments. The information panel exposes each orbit's epoch, reference plane, provenance, and local model limits.
-
-Dates are entered and displayed in **UTC**. The navigation range is **January 1, 1800 through December 31, 2100**. This is a visualization policy, not a scientific accuracy guarantee. Invalid or out-of-range date submissions retain the previous time and show an error. Calendar changes require **Apply UTC Date**. Playback pauses at either boundary; stepping is clamped to the same limits.
-
-The calculation uses uniform 86,400-second days and treats the UTC timestamp as approximate dynamical time. J2000 is numerically represented by `2000-01-01T12:00:00Z`; the actual astronomical epoch is noon TT. Leap seconds, TT/TDB offsets, and relativistic time corrections are omitted. [JPL's time-scale documentation](https://ssd.jpl.nasa.gov/horizons/manual.html) describes the distinctions required for precision ephemerides.
-
-Orbital arguments are measured from the ascending node, periods are positive, and inclinations encode orbital direction. Physical coordinates use AU in a right-handed world frame `(ecliptic X, ecliptic Z, −ecliptic Y)`. Parent-equator satellite orbits use the parent's static illustrative pole transform; Earth's Moon retains its ecliptic reference. Legacy phases and pole azimuths with no recovered provenance are explicitly marked illustrative. Signed physical rotation periods identify retrograde bodies; rendered rotation uses a directed pole without reversing the direction twice.
-
-Comet propagation is local to the sourced perihelion model. Halley's 1986 and Hale-Bopp's 1997 passages were checked during Stage 1; future returns, including Halley in 2061, remain approximate. Static pole directions and arbitrary texture prime meridians do not reproduce precise surface orientation, seasons, lunar phases, eclipses, or the day/night terminator. Do not use this model for observation or mission planning; use [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) for precision states.
-
-The fixed Earth orbit was compared against an independent implementation of [JPL's Table 1 model](https://ssd.jpl.nasa.gov/planets/approx_pos.html), which includes element rates. The reference is the Earth–Moon barycenter, rather than Earth's center. These samples measure differences between two approximate models; they are not a guaranteed error bound against observations or Horizons.
-
-| UTC sample | Position difference |
-| --- | --- |
-| January 1, 1900, 12:00 | Approximately 130,873 km |
-| January 1, 2000, 12:00 | Approximately 2,310 km |
-| October 3, 2026, 00:00 | Approximately 21,081 km |
-| January 1, 2050, 12:00 | Approximately 61,968 km |
-
-These comparisons were recorded during Stage 1 verification. The test fixtures and reference generator were subsequently removed at the project owner's request.
-
-- Moon rendering, camera tracking, measurements, and information-panel distances use shared parent-relative positions. Their numerical consistency does not establish observed phase accuracy for illustrative satellite records.
-- Educational and hybrid scales deliberately change visual proportions and spacing. Numerical measurements use physical coordinates before display scaling.
-- The measurement line mounts only while the measurement panel is open.
-- Missing texture maps recover in place with procedural or neutral replacements. Loading and fallback status are visible; failed graphics contexts offer a scene retry.
-- Stars, procedural textures, and belt particles use random generation, so their appearance can vary between sessions.
-
-## Repository contents
-
-Keep application source, `public/` assets, configuration files, `package.json`, and `package-lock.json` in version control. The `.gitignore` excludes installed dependencies, generated builds, coverage, environment files, logs, personal editor settings, and the local project context file. Sanitized `.env.example` files can be tracked if environment configuration is introduced later.
-
-## First exploration
-
-Pause the timeline, search for Earth, and select Focus Camera. Switch between educational and real scale to compare visible proportions. Open Measure and choose Earth ⇄ Moon to inspect physical distance independently of display scale. Top View and Ecliptic expose an inner/outer/full region selector. On phones, camera and scale settings are in the settings drawer.
-
-## Release validation
+Run the automated checks with:
 
 ```bash
-npm ci
 npm run check
-npm audit --audit-level=high
 npx playwright install chromium
 npm run build -- --base=/interactive_solar_system/
 npm run test:browser
 ```
 
-The screenshot above was captured from the production build at 1280 × 720, paused at October 3, 2026 UTC with seeded generated assets.
+Browser tests expect the subfolder build shown above and start their own server on port 5175. They cover navigation, camera motion, eclipse playback, appearance, responsive layouts, and asset recovery. An installed Edge browser can also be used by setting `PLAYWRIGHT_CHANNEL=msedge`.
 
-The browser suite serves the production build under /interactive_solar_system/ and covers desktop/mobile keyboard search, lunar measurement, guide dismissal, camera regions, and failed-map recovery. CI runs the same checks and uploads dist as a reviewable artifact. Remote CI results require the owner's later push. If the browser download is unavailable, installed Edge can be used locally by setting PLAYWRIGHT_CHANNEL=msedge; CI uses Chromium.
+## Scientific scope
 
-For a root-hosted site, use npm run build without --base. For another subfolder, pass its leading/trailing-slash path through --base. Texture URLs follow Vite's build base. The optional server accepts PORT and BASE_PATH environment variables and binds only to 127.0.0.1. It rejects traversal, sends real asset 404s, revalidates unhashed files, and caches hashed build assets immutably. It is a local preview, not a production hosting service.
+The catalog combines sourced JPL satellite records, NAIF dimensions and orientation constants, and legacy illustrative data. Bundled JPL Horizons vectors provide reference positions for 44 bodies within October 1–9, 2026, subject to each file's actual coverage. Outside that interval, or when reference data is unavailable, the app uses approximate Keplerian propagation. The inspector identifies the active model and its sources.
 
-## Hosting on Cloudflare Workers
+This is an educational visualization, not an observation or mission-planning tool. Fixed orbital elements omit gravitational perturbations; surface orientation and visual effects remain approximate. Eclipse viewers demonstrate physical shadow geometry using idealized alignments. Their event dates do not reconstruct exact eclipse paths, contact times, or local visibility.
 
-The existing Cloudflare project can serve this application using Workers Static Assets. `wrangler.json` identifies the Worker as `interactive-solar-system` and points to the root-hosted production build in `dist/`. Static asset requests are free and unlimited under [Cloudflare's documented pricing](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/).
+Source records live in `public/science/` and `src/astronomy/generated/`. Refresh scripts are in `scripts/`; review generated changes and rerun the checks after refreshing data. [Asset sources and credits](docs/ASSET_SOURCES.md) document verified maps and unresolved provenance for legacy assets.
 
-Use these settings in **Settings → Builds**:
+## Contributing
 
-| Setting | Value |
-| --- | --- |
-| Build command | `npm run build` |
-| Production deploy command | `npx wrangler deploy` |
-| Preview deploy command | `npx wrangler preview` |
-| Root directory | `/` |
-| Production branch | `main`, after the desired changes and `wrangler.json` have been merged and pushed there |
-| Build variable | `NODE_VERSION=24` |
+Use `dev` for development and keep changes focused. Preserve physical calculations separately from display scaling. For visual bug reports, include the viewport size, scale and camera modes, and a paused UTC date.
 
-Commit, merge, and push changes yourself. Cloudflare deploys the selected branch; uncommitted local files are not included. Keep the Worker URL enabled and leave Access authentication disabled for a public website. After the deployment succeeds, use **Visit** to verify the application. No Worker script, backend, or application secret is required.
-
-`wrangler.json` includes an empty `previews` block required by the preview command. Preview builds use the same static assets and compatibility settings as production.
-
-For a local configuration check without publishing, build first and run `npx wrangler deploy --dry-run`. The following Pages instructions are an alternative hosting setup, not settings for this Worker project.
-
-## Hosting on Cloudflare Pages
-
-The application can be hosted on Cloudflare Pages using its Free plan. Connect the GitHub repository so Cloudflare builds and deploys updates when the selected branch receives a push. Private repositories are supported; the deployed website is publicly accessible by default.
-
-1. Commit and push the changes you want to publish yourself.
-2. Sign in to the [Cloudflare dashboard](https://dash.cloudflare.com/), open **Workers & Pages**, and choose **Create application → Pages → Connect to Git**.
-3. Connect GitHub and grant Cloudflare access to `rupeshbhusare77/interactive_solar_system`.
-4. Select the repository and configure the following settings.
-
-| Setting | Value |
-| --- | --- |
-| Project name | `interactive-solar-system`, or another available name |
-| Production branch | `enhancement` for the current implementation; use `main` once those changes have been merged there |
-| Framework preset | React (Vite) |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Root directory | Leave blank; `package.json` is at the repository root |
-| Environment variable | `NODE_VERSION=24` for production and preview builds |
-
-5. Choose **Save and Deploy**. Cloudflare installs dependencies, builds the site, and provides an HTTPS address ending in `.pages.dev`.
-6. Open that address and verify planet textures, Sun rendering, camera controls, mobile layout, and the measurement panel.
-
-Use the root build command above, without `--base=/interactive_solar_system/`. The GitHub Actions browser checks use a subfolder build for regression coverage; Cloudflare independently creates the root-hosted production build. The existing `.nvmrc` also specifies Node 24. No application secrets, backend, or paid domain are required.
-
-`public/_headers` enables immutable caching only for Vite's content-hashed files in `/assets/`. Surface maps and scientific data retain Cloudflare's default caching behavior so updates at their existing filenames can propagate normally.
-
-Later pushes to the production branch trigger deployment automatically. Other enabled branches receive preview deployments. If you change the release branch, update the production branch in the project's settings. The site is not published merely by adding these instructions to the repository.
-
-Official references: [Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/), [build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/), and [Free plan limits](https://developers.cloudflare.com/pages/platform/limits/).
-
-## Attribution and contribution
-
-[Asset provenance](docs/ASSET_SOURCES.md) lists the local texture files and their verified status. Original image authors, redistribution terms, and download URLs have not been recovered. Existing NASA wording in historical comments is not proof of provenance. Resolve those entries before a public release. No project license has been selected; do not assume permission to redistribute assets.
-
-For contributions, use Node.js 24, install with npm ci, keep changes focused, and run the release checks above. Include a paused UTC date and viewport dimensions when reporting visual defects. Preserve physical calculations separately from illustrative display scaling.
-
-Before release: confirm image redistribution rights, select a project license, configure the Cloudflare Pages project, review the build artifact, and run CI after the owner commits and pushes. Publish only after those owner decisions. No live-demo URL is claimed.
-
-## Sourced celestial systems
-
-The simulator includes 460 JPL mean-orbit satellite records across Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto. The independently imported discovery catalog lists 293 Saturn moons; 291 have records in the imported orbital table. Missing positions are not invented. Small moons appear as selectable navigation markers, whose point size does not represent a measured radius. Use the planet inspector's moon filter and **Explore Moon System** action to inspect an inner satellite system.
-
-Sixteen additional NASA-hosted mission-image mosaics replace procedural appearances for selected moons. NAIF planetary constants provide measured triaxial dimensions and polynomial pole/rotation models where available. Map coverage, color processing, longitude registration, satellite periodic orientation terms, and Hyperion's tumbling remain approximate or unknown. Existing legacy maps retain their separate provenance limitations.
-
-### Reference positions and accuracy
-
-Bundled JPL Horizons geometric vectors cover October 1–9, 2026 for 44 bodies. Files load from the site's own static assets; browsers never call JPL APIs. Cubic Hermite interpolation uses positions and velocities in J2000 ecliptic coordinates with UT timestamps. Independent withheld midpoint samples have measured errors below 5 km; this is an interpolation validation result, not a bound on observational uncertainty or every possible timestamp. Coverage ends at each body's actual last sample, which may precede October 9 slightly. Outside coverage, or if a file cannot load, the inspector explicitly identifies approximate fixed-element propagation. Daphnis has no available Horizons coverage for this interval.
-
-The inspector reports geometric illumination, parent eclipses at the moon's center, moon transits across the parent disk from Earth, and pair barycenter offsets. Calculations use physical coordinates and spherical radii, independent of display scaling. They do not predict event contact times or include refraction, light-time correction, or terrain. Reference planetary positions already contain the modeled barycentric motion; no second correction is added.
-
-Saturn's rendered D–F rings use circular boundary and gap dimensions from the [NASA PDS Ring-Moon Systems Node](https://pds-rings.seti.org/saturn/saturn_tables.html). Representative optical depths, neutral color, and scattering remain approximations. Faint outer rings and time-variable fine structure are omitted.
-
-### Refreshing the scientific assets
-
-These maintenance scripts use sequential requests and require network access:
-
-- `node scripts/refresh-science.mjs`: refresh JPL catalog and NAIF constants.
-- `node --experimental-strip-types scripts/refresh-ephemerides.mjs`: regenerate bounded reference vectors and withheld checkpoints.
-- `node scripts/refresh-surfaces.mjs`: refresh NASA-hosted moon maps and source hashes.
-
-Review generated data and run `npm run check`, `npm run build`, and `npm run test:browser` after refreshing. Catalogs can disagree in coverage and confirmation status; the UI reports discovery and orbital coverage separately. The current reference files total 0.89 MiB and load on demand.
+No project license has been selected. Consult the asset source records before redistributing bundled images.
