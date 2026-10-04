@@ -232,10 +232,10 @@ export const TimelineControls: React.FC = () => {
               <span className="font-mono">{currentSpeed?.label.split(' ')[0] ?? `${speed.toLocaleString()}×`}</span>
             </button>
 
-            {isSpeedOpen && (
-              <div
+            {(
+              <div hidden={!isSpeedOpen} {...(!isSpeedOpen ? { inert: '' } : {})}
                 id={speedMenuId}
-                className="timeline-popover glass-panel rounded-xl p-1.5 space-y-1 z-50 text-xs border border-ui-line shadow-2xl"
+                className="ui-disclosure timeline-popover glass-panel rounded-xl p-1.5 space-y-1 z-50 text-xs border border-ui-line shadow-2xl"
               >
                 <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                   Simulation Speed
@@ -284,10 +284,10 @@ export const TimelineControls: React.FC = () => {
               <span>Events</span>
             </button>
 
-            {isEventsOpen && (
-              <div
+            {(
+              <div hidden={!isEventsOpen} {...(!isEventsOpen ? { inert: '' } : {})}
                 id={eventsMenuId}
-                className="timeline-popover glass-panel rounded-xl p-2 space-y-1.5 z-50 text-xs border border-ui-line shadow-2xl max-w-sm"
+                className="ui-disclosure timeline-popover glass-panel rounded-xl p-2 space-y-1.5 z-50 text-xs border border-ui-line shadow-2xl max-w-sm"
               >
                 <div className="px-2 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line flex items-center justify-between">
                   <span>Astronomical Events</span>
@@ -344,11 +344,11 @@ export const TimelineControls: React.FC = () => {
               <span>Date</span>
             </button>
 
-            {isDateOpen && (
-              <form
+            {(
+              <form hidden={!isDateOpen} {...(!isDateOpen ? { inert: '' } : {})}
                 id={dateMenuId}
                 noValidate
-                className="timeline-popover glass-panel rounded-xl p-3 flex flex-col gap-2.5 z-50 text-xs border border-ui-line shadow-2xl"
+                className="ui-disclosure timeline-popover glass-panel rounded-xl p-3 flex flex-col gap-2.5 z-50 text-xs border border-ui-line shadow-2xl"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const date = new FormData(event.currentTarget).get('simulation-date');

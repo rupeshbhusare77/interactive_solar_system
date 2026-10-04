@@ -15,7 +15,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
     await dock.getByRole('button', { name: 'Comets', exact: true }).click();
     await expect(dock.getByRole('button', { name: /Hale-Bopp/ })).toBeVisible();
     await page.getByRole('button', { name: 'Historic astronomical events', exact: true }).click();
-    const popup = page.locator('.timeline-popover');
+    const popup = page.locator('.timeline-popover:not([hidden])');
     const bounds = (await popup.boundingBox())!;
     const header = (await page.locator('.app-header').boundingBox())!;
     expect(bounds.y).toBeGreaterThanOrEqual(header.y + header.height);
@@ -99,7 +99,7 @@ test('eclipse views animate, pause, resume, and distinguish solar and lunar shad
   await page.goto('./');
   for (const event of ['Total Solar Eclipse 2024', 'Total Lunar Eclipse 2026', 'Annular Solar Eclipse 2023']) {
     await page.getByRole('button', { name: 'Historic astronomical events', exact: true }).click();
-    await page.locator('.timeline-popover').getByRole('button', { name: new RegExp(event) }).click();
+    await page.locator('.timeline-popover:not([hidden])').getByRole('button', { name: new RegExp(event) }).click();
     const viewer = page.getByRole('dialog', { name: event });
     await expect(viewer.getByRole('img', { name: /moving eclipse shadows/ })).toBeVisible();
     await viewer.getByRole('button', { name: 'Observer view', exact: true }).click();

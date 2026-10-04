@@ -198,7 +198,7 @@ test('responsive controls stay reachable after resizing and opening settings', a
     expect(layers.x + layers.width).toBeLessThanOrEqual(viewport.width + 1);
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Set simulation date', exact: true }).click();
-    const date = (await page.locator('.timeline-popover').boundingBox())!;
+    const date = (await page.locator('.timeline-popover:not([hidden])').boundingBox())!;
     expect(date.x).toBeGreaterThanOrEqual(0);
     expect(date.y).toBeGreaterThanOrEqual(0);
     expect(date.x + date.width).toBeLessThanOrEqual(viewport.width + 1);

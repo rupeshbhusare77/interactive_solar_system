@@ -135,7 +135,7 @@
 :root {
   --header-height: 56px;
   --timeline-height: 80px;
-  --dock-width: var(--preferred-dock-width, 10rem);
+  --dock-width: var(--preferred-dock-width, 12rem);
 }
 html, body, #root { width: 100%; height: 100%; user-select: auto; -webkit-user-select: auto; overflow: hidden; }
 button, summary, select { touch-action: manipulation; }
@@ -165,7 +165,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   left: .75rem;
   top: calc(var(--header-height) + .75rem);
   bottom: calc(var(--timeline-height) + 1rem);
-  width: var(--dock-width, 10rem);
+  width: var(--dock-width, 12rem);
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -178,7 +178,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .radar-panel {
   display: flex;
   position: absolute;
-  left: calc(var(--dock-width, 10rem) + 1.25rem);
+  left: calc(var(--dock-width, 12rem) + 1.25rem);
   bottom: calc(var(--timeline-height) + 1rem);
   z-index: 20;
   transition: left 320ms var(--ui-ease);
@@ -190,7 +190,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .measurement-panel {
   position: absolute;
   top: calc(var(--header-height) + .75rem);
-  left: calc(var(--dock-width, 10rem) + 1.25rem);
+  left: calc(var(--dock-width, 12rem) + 1.25rem);
   z-index: 20;
   width: min(22rem, calc(100% - 1.5rem));
   max-height: calc(100dvh - var(--header-height) - var(--timeline-height) - 2rem);
@@ -228,7 +228,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   overflow: auto;
   overscroll-behavior: contain;
 }
-.timeline-panel:has(.timeline-popover) { z-index: 60; }
+.timeline-panel:has(.timeline-popover:not([hidden])) { z-index: 60; }
 .timeline-popover button > div:first-child { gap: 8px; align-items: flex-start; }
 .timeline-popover button > div:first-child > span:last-child { flex-shrink: 0; }
 .dock-collapsed .dock-category-tabs, .dock-collapsed .dock-body-list button > span { display: none; }
@@ -460,7 +460,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   .header-actions button { min-width: 32px; padding-inline: .3rem; }
   .timeline-main > div:first-child { flex-basis: auto; }
   .timeline-panel { max-height: 40dvh; overflow-y: auto; }
-  .timeline-panel:has(.timeline-popover) { overflow: visible; }
+  .timeline-panel:has(.timeline-popover:not([hidden])) { overflow: visible; }
   .radar-panel { top: calc(var(--header-height) + .5rem); bottom: auto; max-height: calc(100dvh - var(--header-height) - .75rem); }
 }
 
@@ -562,7 +562,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .quick-dock { border-radius: 20px; padding: 6px; }
 .dock-header { padding: 4px 4px 6px 4px; margin-bottom: 4px; }
 .dock-category-tabs { gap: 2px; }
-.dock-category-tabs button { min-height: 24px; padding-inline: 6px; font-size: 10px !important; border: none; border-radius: 6px; }
+.dock-category-tabs button { min-height: 24px; padding-inline: 7px; font-size: 11px !important; border: none; border-radius: 6px; }
 .dock-body-list { gap: 4px; }
 .dock-body-list button { min-height: 38px; border: none; border-radius: 12px; }
 .dock-body-list button[aria-pressed="true"] { background: var(--ui-accent-soft); box-shadow: none; }
@@ -782,7 +782,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
 .eclipse-restart { padding: 6px 12px; margin-top: 10px; border-radius: 10px; }
 
 @media (max-width: 767px) {
-  :root { --mobile-dock-height: 86px; }
+  :root { --mobile-dock-height: 112px; }
   .quick-dock {
     flex-direction: column;
     height: var(--mobile-dock-height);
@@ -793,7 +793,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   .quick-dock .dock-header { display: flex; padding: 0; margin: 0; border: none; flex-shrink: 0; }
   .quick-dock .dock-header > button { display: none; }
   .quick-dock .dock-category-tabs { display: flex; }
-  .quick-dock .dock-category-tabs button { min-height: 28px; padding-inline: 12px; }
+  .quick-dock .dock-category-tabs button { min-height: 44px; padding-inline: 12px; }
   .quick-dock .dock-body-list { width: 100%; min-height: 0; }
   .quick-dock .dock-body-list button > span { display: inline; }
   .info-panel {
@@ -816,3 +816,58 @@ button:focus-visible, summary:focus-visible, input:focus-visible, select:focus-v
   }
 }
 .info-panel .panel-body { overscroll-behavior: contain; }
+
+/* Shared disclosure motion keeps dismissed controls out of keyboard and pointer input. */
+.ui-disclosure[hidden] { display: none !important; pointer-events: none; }
+.ui-disclosure { opacity: 1; translate: 0 0; }
+.glass-panel :is(button, summary) { -webkit-tap-highlight-color: transparent; }
+.glass-panel summary { cursor: pointer; border-radius: 10px; }
+.glass-panel :is(.panel-body, .dock-body-list, .eclipse-content) { scrollbar-width: thin; scrollbar-color: var(--ui-line) transparent; }
+.header-search:focus-within input { border-color: var(--ui-accent); box-shadow: 0 0 0 3px var(--ui-accent-soft); }
+.header-search [aria-label="Clear search query"] { inset-block: 0; right: 2px; display: grid; place-items: center; min-width: 32px; }
+.info-panel [role="tab"] { min-height: 36px; }
+.dock-category-tabs button[aria-pressed="true"] { color: var(--ui-accent); background: var(--ui-hover); box-shadow: 0 1px 4px rgb(0 0 0 / 12%); }
+.dock-body-list button[aria-pressed="true"] { box-shadow: inset 2px 0 var(--ui-accent); }
+.panel-body { overflow-wrap: anywhere; }
+.panel-body .flex.justify-between { gap: 12px; }
+.mobile-settings button .truncate { white-space: normal; overflow: visible; text-overflow: clip; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .glass-panel .ui-disclosure {
+    animation: none;
+    transition: opacity 180ms var(--ui-ease), translate 220ms var(--ui-ease), display 220ms allow-discrete;
+  }
+  .ui-disclosure[hidden] { opacity: 0; translate: 0 -4px; }
+  .timeline-popover.ui-disclosure[hidden] { translate: 0 4px; }
+  @starting-style {
+    .ui-disclosure { opacity: 0; translate: 0 -4px; }
+    .timeline-popover.ui-disclosure { translate: 0 4px; }
+  }
+  .dock-body-list { animation: surface-appear 180ms var(--ui-ease); }
+  .glass-panel summary { transition: background-color 180ms var(--ui-ease), color 180ms var(--ui-ease); }
+}
+
+/* Comfortable touch targets and bounded reading surfaces at every viewport size. */
+@media (max-width: 767px) {
+  .header-actions button, .mobile-settings button, .timeline-main button,
+  .quick-dock button, .info-panel button, .help-dialog button { min-height: 44px; }
+  .header-actions button { min-width: 44px; }
+  .header-search input { min-height: 44px; }
+  .header-search > .lucide { top: 14px; }
+  .header-search-popup [role="option"] { min-height: 48px; }
+  .quick-dock .dock-body-list { flex: 1 1 auto; overscroll-behavior-x: contain; }
+  .quick-dock .dock-category-tabs { display: flex; }
+  .info-panel [role="tablist"] { overscroll-behavior-x: contain; }
+  .info-panel [role="tab"] { flex: 0 0 auto; padding-inline: 10px; white-space: nowrap; }
+  .info-panel [aria-label="Close telemetry panel"] { min-width: 44px; }
+  .help-dialog > .glass-panel > div { padding-inline: 16px; }
+}
+@media (min-width: 768px) and (max-height: 520px) {
+  :root { --dock-width: var(--preferred-dock-width, 12rem); }
+  .quick-dock:not(.dock-collapsed) .dock-category-tabs { display: flex; }
+  .quick-dock:not(.dock-collapsed) .dock-body-list button > span { display: inline; }
+  .quick-dock:not(.dock-collapsed) .dock-body-list button { justify-content: flex-start; padding-inline: 8px; }
+}
+@media (pointer: coarse) and (min-width: 768px) {
+  .glass-panel button { min-height: 44px; }
+}
