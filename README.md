@@ -2,6 +2,8 @@
 
 RxSolar is a browser-based 3D solar system simulator built with React, TypeScript, and Three.js. Select celestial bodies, control simulation time, inspect orbital data, and measure distances across the solar system.
 
+[**Live demo**](https://interactive-solar-system.rupeshbhusare1232.workers.dev/)
+
 ![RxSolar showing the inner planets, body inspector, radar, and timeline](docs/images/overview.png)
 
 ## Features
@@ -87,4 +89,6 @@ Source records live in `public/science/` and `src/astronomy/generated/`. Refresh
 
 Use `dev` for development and keep changes focused. Preserve physical calculations separately from display scaling. For visual bug reports, include the viewport size, scale and camera modes, and a paused UTC date.
 
-No project license has been selected. Consult the asset source records before redistributing bundled images.
+## License
+
+Source code is licensed under the [MIT License](LICENSE). Third-party assets retain their original terms; see [Asset sources and credits](docs/ASSET_SOURCES.md).
