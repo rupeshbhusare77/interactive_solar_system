@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { ScaleMode, CameraMode, ViewToggles } from '../astronomy/types';
 import { clampSimulationDate, validateSimulationDate, SIMULATION_MIN_DATE, SIMULATION_MAX_DATE } from '../astronomy/modelContract';
 import { createFrameCalculations } from './frameCalculations';
+import { CELESTIAL_BODY_MAP } from '../astronomy/celestialData';
 
 export interface SimulationContextType {
   // Time and animation
@@ -27,9 +28,12 @@ export interface SimulationContextType {
   setScaleMode: (mode: ScaleMode) => void;
   cameraMode: CameraMode;
   setCameraMode: (mode: CameraMode) => void;
+  smoothCameraMotion: boolean;
+  setSmoothCameraMotion: (smooth: boolean) => void;
 
   // Body selection & navigation
   selectedBodyId: string | null;
+  selectionVersion: number;
   selectBody: (id: string | null) => void;
   hoveredBodyId: string | null;
   setHoveredBodyId: (id: string | null) => void;
@@ -85,6 +89,8 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(86400 * 3);
   const [scaleMode, setScaleMode] = useState<ScaleMode>('educational');
   const [cameraMode, setCameraMode] = useState<CameraMode>('free');
+  const [smoothCameraMotion, setSmoothCameraMotion] = useState(() => !matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [selectionVersion, setSelectionVersion] = useState(0);
 
   const [selectedBodyId, setSelectedBodyId] = useState<string | null>('earth');
   const [hoveredBodyId, setHoveredBodyId] = useState<string | null>(null);
@@ -169,6 +175,11 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const selectBody = useCallback((id: string | null) => {
     setSelectedBodyId(id);
     if (id) {
+      setSelectionVersion(version => version + 1);
+      setCameraMode('focus');
+      if (CELESTIAL_BODY_MAP.get(id)?.type === 'moon') {
+        setViewToggles(previous => ({ ...previous, showMoons: true }));
+      }
       setIsInfoOpen(true);
       updateIsMeasurementOpen(false);
     }
@@ -197,6 +208,9 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setScaleMode,
         cameraMode,
         setCameraMode,
+        smoothCameraMotion,
+        setSmoothCameraMotion,
+        selectionVersion,
         selectedBodyId,
         selectBody,
         hoveredBodyId,
