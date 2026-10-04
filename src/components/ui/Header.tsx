@@ -47,7 +47,7 @@ const highlightMatch = (text: string, q: string) => {
   return (
     <>
       {text.substring(0, idx)}
-      <span className="text-sky-300 font-bold underline decoration-sky-400/60">
+      <span className="text-ui-accent font-bold underline decoration-sky-400/60">
         {text.substring(idx, idx + q.length)}
       </span>
       {text.substring(idx + q.length)}
@@ -58,17 +58,17 @@ const highlightMatch = (text: string, q: string) => {
 const getTypeBadge = (type: string) => {
   switch (type) {
     case 'star':
-      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Star</span>;
+      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-ui-warning border border-amber-500/30">Star</span>;
     case 'planet':
-      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">Planet</span>;
+      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-ui-selected text-ui-accent border border-ui-line">Planet</span>;
     case 'dwarf':
-      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">Dwarf</span>;
+      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-purple-500/15 text-ui-purple border border-purple-500/30">Dwarf</span>;
     case 'moon':
-      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-700/50 text-zinc-300 border border-zinc-600/40">Moon</span>;
+      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-ui-inset text-ui-secondary border border-ui-line">Moon</span>;
     case 'comet':
-      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-300 border border-teal-500/30">Comet</span>;
+      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-teal-500/15 text-ui-success border border-teal-500/30">Comet</span>;
     default:
-      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{type}</span>;
+      return <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-ui-inset text-ui-muted">{type}</span>;
   }
 };
 
@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
   return (
     <header
       ref={headerRef}
-      className="app-header absolute top-0 left-0 right-0 z-40 glass-panel border-b border-white/10 pointer-events-auto"
+      className="app-header absolute top-0 left-0 right-0 z-40 glass-panel border-b border-ui-line pointer-events-auto"
     >
       {/* Brand */}
       <div className="header-brand flex items-center gap-2.5">
@@ -195,13 +195,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           <Globe2 className="w-4 h-4 text-black" />
         </div>
         <div>
-          <h1 className="text-xs sm:text-sm font-bold tracking-wider text-white uppercase flex items-center gap-1.5">
+          <h1 className="text-xs sm:text-sm font-bold tracking-wider text-ui-primary uppercase flex items-center gap-1.5">
             <span>RxSolar</span>
-            <span className="text-[10px] text-sky-400 font-mono px-1 py-0.2 rounded bg-sky-500/10 border border-sky-500/20">
+            <span className="text-[10px] text-ui-accent font-mono px-1 py-0.2 rounded bg-ui-selected border border-ui-line">
               Keplerian 3D
             </span>
           </h1>
-          <p className="text-[10px] text-zinc-400 font-mono hidden sm:block">
+          <p className="text-[10px] text-ui-muted font-mono hidden sm:block">
             Educational planetary dynamics
           </p>
         </div>
@@ -221,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
         >
           <Search
             aria-hidden="true"
-            className="w-4 h-4 text-zinc-400 absolute left-2.5 top-2.5 pointer-events-none"
+            className="w-4 h-4 text-ui-muted absolute left-2.5 top-2.5 pointer-events-none"
           />
           <input
             ref={inputRef}
@@ -273,7 +273,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                 chooseBody(filteredBodies[activeIndex].id);
               }
             }}
-            className="w-full pl-8 pr-7 py-1.5 text-xs bg-black/60 border border-zinc-700/70 rounded-lg text-white placeholder-zinc-500 font-mono focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400/50"
+            className="w-full pl-8 pr-7 py-1.5 text-xs bg-ui-inset border border-ui-line rounded-lg text-ui-primary placeholder-ui-muted font-mono focus:border-ui-line focus:outline-none focus:ring-1 focus:ring-sky-400/50"
           />
           {searchQuery && (
             <button
@@ -284,7 +284,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                 inputRef.current?.focus();
               }}
               aria-label="Clear search query"
-              className="absolute right-2 top-2 text-zinc-400 hover:text-white"
+              className="absolute right-2 top-2 text-ui-muted hover:text-ui-primary"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -292,7 +292,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
 
           {/* Search Popup */}
           {isSearchOpen && (
-            <div className="header-search-popup absolute top-full left-0 right-0 mt-1 py-1 glass-panel rounded-xl border border-zinc-700/80 shadow-2xl z-50 max-h-72 overflow-y-auto">
+            <div className="header-search-popup absolute top-full left-0 right-0 mt-1 py-1 glass-panel rounded-xl border border-ui-line shadow-2xl z-50 max-h-72 overflow-y-auto">
               <div
                 id={`${searchId}-results`}
                 role="listbox"
@@ -329,8 +329,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                     }}
                     className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between transition-colors ${
                       activeIndex === index
-                        ? 'bg-sky-500/25 text-white'
-                        : 'hover:bg-white/10 text-zinc-200'
+                        ? 'bg-ui-selected text-ui-primary'
+                        : 'hover:bg-ui-inset text-ui-primary'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -347,7 +347,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                 ))}
               </div>
               {!filteredBodies.length && (
-                <p role="status" className="px-3 py-2 text-xs text-zinc-400">
+                <p role="status" className="px-3 py-2 text-xs text-ui-muted">
                   {query
                     ? 'No matching celestial bodies found.'
                     : 'Type a body name or type to search.'}
@@ -381,15 +381,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
             aria-expanded={isScaleOpen}
             aria-controls={scaleId}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg glass-button transition-colors ${
-              isScaleOpen ? 'active' : 'text-zinc-300'
+              isScaleOpen ? 'active' : 'text-ui-secondary'
             }`}
           >
-            <Scale aria-hidden="true" className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-            <span className="hidden sm:inline text-zinc-400">Scale:</span>
-            <span className="font-medium text-white">{activeScale.label}</span>
+            <Scale aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent shrink-0" />
+            <span className="hidden sm:inline text-ui-muted">Scale:</span>
+            <span className="font-medium text-ui-primary">{activeScale.label}</span>
             <ChevronDown
               aria-hidden="true"
-              className={`w-3 h-3 text-zinc-400 transition-transform duration-150 ${
+              className={`w-3 h-3 text-ui-muted transition-transform duration-150 ${
                 isScaleOpen ? 'rotate-180' : ''
               }`}
             />
@@ -400,9 +400,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
               id={scaleId}
               role="listbox"
               aria-label="Display scale options"
-              className="absolute left-0 mt-1.5 w-60 glass-panel rounded-xl border border-zinc-700/80 shadow-2xl p-1 z-50 text-xs"
+              className="absolute left-0 mt-1.5 w-60 glass-panel rounded-xl border border-ui-line shadow-2xl p-1 z-50 text-xs"
             >
-              <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-zinc-400 border-b border-zinc-800">
+              <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Display Scale
               </div>
               {SCALE_OPTIONS.map((opt) => {
@@ -419,16 +419,16 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                       scaleButtonRef.current?.focus();
                     }}
                     className={`w-full px-2.5 py-2 text-left rounded-lg flex items-start justify-between transition-colors ${
-                      isCurrent ? 'bg-sky-500/20 text-white' : 'hover:bg-white/10 text-zinc-300'
+                      isCurrent ? 'bg-ui-selected text-ui-primary' : 'hover:bg-ui-inset text-ui-secondary'
                     }`}
                   >
                     <div>
-                      <div className="font-medium text-white flex items-center gap-1.5">
+                      <div className="font-medium text-ui-primary flex items-center gap-1.5">
                         {opt.label}
                       </div>
-                      <div className="text-[10px] text-zinc-400 leading-snug">{opt.desc}</div>
+                      <div className="text-[10px] text-ui-muted leading-snug">{opt.desc}</div>
                     </div>
-                    {isCurrent && <Check className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />}
+                    {isCurrent && <Check className="w-4 h-4 text-ui-accent shrink-0 mt-0.5" />}
                   </button>
                 );
               })}
@@ -460,15 +460,15 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
             aria-expanded={isCameraOpen}
             aria-controls={cameraId}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg glass-button transition-colors ${
-              isCameraOpen ? 'active' : 'text-zinc-300'
+              isCameraOpen ? 'active' : 'text-ui-secondary'
             }`}
           >
-            <Camera aria-hidden="true" className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="hidden sm:inline text-zinc-400">Camera:</span>
-            <span className="font-medium text-white">{activeCamera.label}</span>
+            <Camera aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent shrink-0" />
+            <span className="hidden sm:inline text-ui-muted">Camera:</span>
+            <span className="font-medium text-ui-primary">{activeCamera.label}</span>
             <ChevronDown
               aria-hidden="true"
-              className={`w-3 h-3 text-zinc-400 transition-transform duration-150 ${
+              className={`w-3 h-3 text-ui-muted transition-transform duration-150 ${
                 isCameraOpen ? 'rotate-180' : ''
               }`}
             />
@@ -479,9 +479,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
               id={cameraId}
               role="listbox"
               aria-label="Camera modes"
-              className="absolute left-0 mt-1.5 w-56 glass-panel rounded-xl border border-zinc-700/80 shadow-2xl p-1 z-50 text-xs"
+              className="absolute left-0 mt-1.5 w-56 glass-panel rounded-xl border border-ui-line shadow-2xl p-1 z-50 text-xs"
             >
-              <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-zinc-400 border-b border-zinc-800">
+              <div className="px-2.5 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Camera Mode
               </div>
               {CAMERA_OPTIONS.map((opt) => {
@@ -498,14 +498,14 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                       cameraButtonRef.current?.focus();
                     }}
                     className={`w-full px-2.5 py-2 text-left rounded-lg flex items-start justify-between transition-colors ${
-                      isCurrent ? 'bg-sky-500/20 text-white' : 'hover:bg-white/10 text-zinc-300'
+                      isCurrent ? 'bg-ui-selected text-ui-primary' : 'hover:bg-ui-inset text-ui-secondary'
                     }`}
                   >
                     <div>
-                      <div className="font-medium text-white">{opt.label}</div>
-                      <div className="text-[10px] text-zinc-400 leading-snug">{opt.desc}</div>
+                      <div className="font-medium text-ui-primary">{opt.label}</div>
+                      <div className="text-[10px] text-ui-muted leading-snug">{opt.desc}</div>
                     </div>
-                    {isCurrent && <Check className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />}
+                    {isCurrent && <Check className="w-4 h-4 text-ui-accent shrink-0 mt-0.5" />}
                   </button>
                 );
               })}
@@ -522,9 +522,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           onClick={handleResetCamera}
           title="Reset camera to free heliocentric overview"
           aria-label="Reset camera to free overview"
-          className="p-2 text-xs rounded-lg glass-button text-zinc-300 hover:text-white"
+          className="p-2 text-xs rounded-lg glass-button text-ui-secondary hover:text-ui-primary"
         >
-          <RotateCcw aria-hidden="true" className="w-3.5 h-3.5 text-zinc-400" />
+          <RotateCcw aria-hidden="true" className="w-3.5 h-3.5 text-ui-muted" />
         </button>
 
         {/* Measure Tool Toggle */}
@@ -535,10 +535,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           aria-expanded={isMeasurementOpen}
           aria-pressed={isMeasurementOpen}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg glass-button ${
-            isMeasurementOpen ? 'active' : 'text-zinc-300'
+            isMeasurementOpen ? 'active' : 'text-ui-secondary'
           }`}
         >
-          <Ruler aria-hidden="true" className="w-3.5 h-3.5 text-sky-400" />
+          <Ruler aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent" />
           <span className="hidden sm:inline">Measure</span>
         </button>
 
@@ -570,11 +570,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
             aria-label="Visual layers"
             aria-expanded={isViewMenuOpen}
             aria-controls={layersId}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg glass-button text-zinc-300"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg glass-button text-ui-secondary"
           >
-            <Layers aria-hidden="true" className="w-3.5 h-3.5 text-amber-400" />
+            <Layers aria-hidden="true" className="w-3.5 h-3.5 text-ui-warning" />
             <span className="hidden sm:inline">Layers</span>
-            <ChevronDown aria-hidden="true" className="w-3 h-3 text-zinc-400" />
+            <ChevronDown aria-hidden="true" className="w-3 h-3 text-ui-muted" />
           </button>
 
           {isViewMenuOpen && (
@@ -582,9 +582,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
               id={layersId}
               role="group"
               aria-label="Visual layers"
-              className="header-layers-popup absolute right-0 mt-1.5 w-56 glass-panel rounded-xl border border-zinc-700/80 shadow-2xl py-1.5 z-50 text-xs"
+              className="header-layers-popup absolute right-0 mt-1.5 w-56 glass-panel rounded-xl border border-ui-line shadow-2xl py-1.5 z-50 text-xs"
             >
-              <div className="px-3 py-1 text-[10px] uppercase font-mono text-zinc-400 border-b border-zinc-800">
+              <div className="px-3 py-1 text-[10px] uppercase font-mono text-ui-muted border-b border-ui-line">
                 Scene Overlays
               </div>
               {[
@@ -604,13 +604,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                     key={key}
                     aria-pressed={active}
                     onClick={() => toggleView(key as keyof typeof viewToggles)}
-                    className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-white/10 transition-colors"
+                    className="w-full px-3 py-2 text-left flex items-center justify-between hover:bg-ui-inset transition-colors"
                   >
-                    <span className={active ? 'text-white' : 'text-zinc-400'}>
+                    <span className={active ? 'text-ui-primary' : 'text-ui-muted'}>
                       {label}
                     </span>
                     {active && (
-                      <Check aria-hidden="true" className="w-4 h-4 text-sky-400" />
+                      <Check aria-hidden="true" className="w-4 h-4 text-ui-accent" />
                     )}
                   </button>
                 );
@@ -625,12 +625,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           onClick={toggleFullscreen}
           title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
           aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-          className="p-2 text-xs text-zinc-300 glass-button rounded-lg hover:text-white"
+          className="p-2 text-xs text-ui-secondary glass-button rounded-lg hover:text-ui-primary"
         >
           {isFullscreen ? (
-            <Minimize aria-hidden="true" className="w-3.5 h-3.5 text-sky-400" />
+            <Minimize aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent" />
           ) : (
-            <Maximize aria-hidden="true" className="w-3.5 h-3.5 text-zinc-400" />
+            <Maximize aria-hidden="true" className="w-3.5 h-3.5 text-ui-muted" />
           )}
         </button>
 
@@ -640,9 +640,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           onClick={onOpenHelp}
           aria-label="Open astronomical guide and controls"
           aria-haspopup="dialog"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-zinc-300 glass-button rounded-lg hover:text-white"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-ui-secondary glass-button rounded-lg hover:text-ui-primary"
         >
-          <HelpCircle aria-hidden="true" className="w-3.5 h-3.5 text-sky-400" />
+          <HelpCircle aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent" />
           <span className="hidden sm:inline">Help</span>
         </button>
 
@@ -659,13 +659,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
           aria-label={isMobileMenuOpen ? 'Close settings menu' : 'Open settings menu'}
           aria-expanded={isMobileMenuOpen}
           className={`md:hidden p-2 text-xs rounded-lg glass-button transition-colors ${
-            isMobileMenuOpen ? 'active text-sky-300' : 'text-zinc-300 hover:text-white'
+            isMobileMenuOpen ? 'active text-ui-accent' : 'text-ui-secondary hover:text-ui-primary'
           }`}
         >
           {isMobileMenuOpen ? (
-            <X aria-hidden="true" className="w-3.5 h-3.5 text-sky-400" />
+            <X aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent" />
           ) : (
-            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-sky-400" />
+            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-ui-accent" />
           )}
         </button>
       </div>
@@ -679,11 +679,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
               mobileButtonRef.current?.focus();
             }
           }}
-          className="mobile-settings md:hidden p-3 glass-panel rounded-2xl border border-zinc-700/80 shadow-2xl flex flex-col gap-3 text-xs z-50">
+          className="mobile-settings md:hidden p-3 glass-panel rounded-2xl border border-ui-line shadow-2xl flex flex-col gap-3 text-xs z-50">
           {/* Scale selection */}
           <div>
-            <div className="text-[10px] font-mono uppercase text-zinc-400 mb-1.5 flex items-center gap-1.5">
-              <Scale className="w-3 h-3 text-sky-400" /> Display Scale
+            <div className="text-[10px] font-mono uppercase text-ui-muted mb-1.5 flex items-center gap-1.5">
+              <Scale className="w-3 h-3 text-ui-accent" /> Display Scale
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {SCALE_OPTIONS.map((opt) => (
@@ -695,8 +695,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                   }}
                   className={`px-2 py-1.5 rounded-lg text-center font-medium transition-colors ${
                     scaleMode === opt.value
-                      ? 'bg-sky-500/25 text-white border border-sky-400/60 font-semibold'
-                      : 'bg-zinc-800/60 text-zinc-300 hover:bg-zinc-700/50'
+                      ? 'bg-ui-selected text-ui-primary border border-ui-line font-semibold'
+                      : 'bg-ui-inset text-ui-secondary hover:bg-ui-inset'
                   }`}
                 >
                   <div className="truncate">{opt.label}</div>
@@ -707,8 +707,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
 
           {/* Camera selection */}
           <div>
-            <div className="text-[10px] font-mono uppercase text-zinc-400 mb-1.5 flex items-center gap-1.5">
-              <Camera className="w-3 h-3 text-sky-400" /> Camera Angle
+            <div className="text-[10px] font-mono uppercase text-ui-muted mb-1.5 flex items-center gap-1.5">
+              <Camera className="w-3 h-3 text-ui-accent" /> Camera Angle
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
               {CAMERA_OPTIONS.map((opt) => (
@@ -720,8 +720,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                   }}
                   className={`px-2 py-1.5 rounded-lg text-center font-medium transition-colors ${
                     cameraMode === opt.value
-                      ? 'bg-sky-500/25 text-white border border-sky-400/60 font-semibold'
-                      : 'bg-zinc-800/60 text-zinc-300 hover:bg-zinc-700/50'
+                      ? 'bg-ui-selected text-ui-primary border border-ui-line font-semibold'
+                      : 'bg-ui-inset text-ui-secondary hover:bg-ui-inset'
                   }`}
                 >
                   <div className="truncate">{opt.label}</div>
@@ -732,8 +732,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
 
           {/* Scene Layer Quick Toggles */}
           <div>
-            <div className="text-[10px] font-mono uppercase text-zinc-400 mb-1.5 flex items-center gap-1.5">
-              <Layers className="w-3 h-3 text-amber-400" /> Scene Overlays
+            <div className="text-[10px] font-mono uppercase text-ui-muted mb-1.5 flex items-center gap-1.5">
+              <Layers className="w-3 h-3 text-ui-warning" /> Scene Overlays
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {[
@@ -752,12 +752,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHelp, onToggleMeasurement,
                     onClick={() => toggleView(key as keyof typeof viewToggles)}
                     className={`px-2.5 py-1.5 rounded-lg flex items-center justify-between text-left transition-colors ${
                       active
-                        ? 'bg-sky-500/20 text-white border border-sky-400/40'
-                        : 'bg-zinc-800/50 text-zinc-400'
+                        ? 'bg-ui-selected text-ui-primary border border-ui-line'
+                        : 'bg-ui-inset text-ui-muted'
                     }`}
                   >
                     <span>{label}</span>
-                    {active && <Check className="w-3.5 h-3.5 text-sky-400" />}
+                    {active && <Check className="w-3.5 h-3.5 text-ui-accent" />}
                   </button>
                 );
               })}

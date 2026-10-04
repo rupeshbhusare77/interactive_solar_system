@@ -104,18 +104,18 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
   return (
     <section
       aria-label="Distance measurement"
-      className="measurement-panel glass-panel rounded-xl p-3 border border-sky-500/40 shadow-glow-cyan flex flex-col gap-2.5 pointer-events-auto backdrop-blur-xl"
+      className="measurement-panel glass-panel rounded-xl p-3 border border-ui-line shadow-glow-cyan flex flex-col gap-2.5 pointer-events-auto backdrop-blur-xl"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
-        <div className="flex items-center gap-1.5 text-sky-400 font-semibold text-xs tracking-wide">
+      <div className="flex items-center justify-between border-b border-ui-line pb-1.5">
+        <div className="flex items-center gap-1.5 text-ui-accent font-semibold text-xs tracking-wide">
           <Ruler className="w-4 h-4" />
           <span>Interplanetary Distance Meter</span>
         </div>
         <button
           onClick={onClose}
           aria-label="Close measurement"
-          className="p-1 rounded text-zinc-400 hover:text-white transition-colors"
+          className="p-1 rounded text-ui-muted hover:text-ui-primary transition-colors"
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -131,7 +131,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
               setMeasurementOriginId(preset.origin);
               setMeasurementTargetId(preset.target);
             }}
-            className="px-2 py-0.5 rounded bg-zinc-800/80 hover:bg-sky-500/20 text-zinc-300 hover:text-sky-300 border border-zinc-700/60 whitespace-nowrap transition-colors"
+            className="px-2 py-0.5 rounded bg-ui-inset hover:bg-ui-selected text-ui-secondary hover:text-ui-accent border border-ui-line whitespace-nowrap transition-colors"
           >
             {preset.label}
           </button>
@@ -144,7 +144,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
         <div>
           <label
             htmlFor="measurement-origin"
-            className="text-[10px] text-zinc-500 uppercase font-mono block mb-1 flex items-center gap-1"
+            className="text-[10px] text-ui-muted uppercase font-mono block mb-1 flex items-center gap-1"
           >
             {originBody && (
               <span
@@ -158,7 +158,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
             id="measurement-origin"
             value={measurementOriginId || ''}
             onChange={(e) => setMeasurementOriginId(e.target.value || null)}
-            className="w-full bg-black/60 border border-zinc-700 rounded px-2 py-1 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
+            className="w-full bg-ui-inset border border-ui-line rounded px-2 py-1 text-ui-primary text-xs font-mono focus:outline-none focus:border-ui-line"
           >
             {CELESTIAL_BODIES.map((b) => (
               <option key={`orig-${b.id}`} value={b.id}>
@@ -171,7 +171,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
         {/* Swap Button */}
         <button
           onClick={swapBodies}
-          className="mt-4 p-1.5 rounded glass-button text-sky-400 hover:text-white"
+          className="mt-4 p-1.5 rounded glass-button text-ui-accent hover:text-ui-primary"
           title="Swap bodies"
           aria-label="Swap origin and target bodies"
         >
@@ -182,7 +182,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
         <div>
           <label
             htmlFor="measurement-target"
-            className="text-[10px] text-zinc-500 uppercase font-mono block mb-1 flex items-center gap-1"
+            className="text-[10px] text-ui-muted uppercase font-mono block mb-1 flex items-center gap-1"
           >
             {targetBody && (
               <span
@@ -196,7 +196,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
             id="measurement-target"
             value={measurementTargetId || ''}
             onChange={(e) => setMeasurementTargetId(e.target.value || null)}
-            className="w-full bg-black/60 border border-zinc-700 rounded px-2 py-1 text-white text-xs font-mono focus:outline-none focus:border-sky-500"
+            className="w-full bg-ui-inset border border-ui-line rounded px-2 py-1 text-ui-primary text-xs font-mono focus:outline-none focus:border-ui-line"
           >
             {CELESTIAL_BODIES.map((b) => (
               <option key={`targ-${b.id}`} value={b.id}>
@@ -209,15 +209,15 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
 
       {/* Real-time Dynamic Results */}
       {originPosition && targetPosition ? (
-        <div className="bg-black/60 border border-zinc-800 rounded-lg p-2.5 space-y-2 font-mono text-xs">
+        <div className="bg-ui-inset border border-ui-line rounded-lg p-2.5 space-y-2 font-mono text-xs">
           {/* Main Astronomical Distance */}
-          <div className="flex justify-between items-baseline border-b border-zinc-800/80 pb-1.5">
-            <span className="text-zinc-400 text-[11px]">Euclidean Distance:</span>
+          <div className="flex justify-between items-baseline border-b border-ui-line pb-1.5">
+            <span className="text-ui-muted text-[11px]">Euclidean Distance:</span>
             <div className="text-right">
-              <span className="text-sky-300 font-bold text-sm block">
+              <span className="text-ui-accent font-bold text-sm block">
                 {distAU.toFixed(4)} AU
               </span>
-              <span className="text-white text-[11px] block">
+              <span className="text-ui-primary text-[11px] block">
                 {(distKm / 1e6).toFixed(3)}M km ({distKm.toLocaleString(undefined, { maximumFractionDigits: 0 })} km)
               </span>
             </div>
@@ -225,20 +225,20 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
 
           {/* Travel Times Comparison Breakdown */}
           <div className="space-y-1 text-[11px]">
-            <div className="flex justify-between items-center text-amber-300">
-              <span className="flex items-center gap-1 text-amber-400">
+            <div className="flex justify-between items-center text-ui-warning">
+              <span className="flex items-center gap-1 text-ui-warning">
                 <Zap className="w-3 h-3" /> Light Speed:
               </span>
               <span className="font-semibold">{lightTimeStr}</span>
             </div>
-            <div className="flex justify-between items-center text-zinc-300">
-              <span className="flex items-center gap-1 text-sky-400">
+            <div className="flex justify-between items-center text-ui-secondary">
+              <span className="flex items-center gap-1 text-ui-accent">
                 <Rocket className="w-3 h-3" /> Deep Space Probe (58k km/h):
               </span>
               <span>{probeTimeStr}</span>
             </div>
-            <div className="flex justify-between items-center text-zinc-400">
-              <span className="flex items-center gap-1 text-zinc-400">
+            <div className="flex justify-between items-center text-ui-muted">
+              <span className="flex items-center gap-1 text-ui-muted">
                 <Plane className="w-3 h-3" /> Jet Airliner (900 km/h):
               </span>
               <span>{jetTimeStr}</span>
@@ -246,7 +246,7 @@ export const MeasurementTool: React.FC<MeasurementToolProps> = ({ isOpen, onClos
           </div>
         </div>
       ) : (
-        <div className="text-[11px] text-zinc-400 text-center py-2 bg-black/30 rounded border border-zinc-800">
+        <div className="text-[11px] text-ui-muted text-center py-2 bg-ui-inset rounded border border-ui-line">
           Position unavailable. Select two supported celestial bodies to measure distance.
         </div>
       )}

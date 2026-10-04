@@ -28,7 +28,7 @@ A browser-based 3D solar system simulator built with React, TypeScript, and Thre
 | Icons | Lucide React |
 | Development and builds | Vite |
 
-The application runs in the browser without a backend or database. Simulation state is held in memory and resets when the page reloads. Texture assets are included in the repository; the page also requests fonts from Google Fonts.
+The application runs in the browser without a backend or database. Simulation state is held in memory and resets when the page reloads. Texture assets are included in the repository. The interface uses system fonts and follows the device's light or dark appearance, reduced motion, reduced transparency, and increased contrast preferences.
 
 ## Getting started
 

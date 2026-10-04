@@ -63,7 +63,7 @@ export const MiniMap: React.FC = () => {
         type="button"
         onClick={() => setIsMobileOpen((prev) => !prev)}
         aria-label="Toggle Orbital Radar"
-        className="mobile-radar-trigger md:hidden fixed left-3 bottom-20 z-30 p-2 rounded-xl glass-panel border border-sky-400/40 shadow-glow-cyan text-sky-300"
+        className="mobile-radar-trigger md:hidden fixed left-3 z-30 p-2 rounded-xl glass-panel border border-ui-line shadow-glow-cyan text-ui-accent"
       >
         <Compass className="w-4 h-4" />
       </button>
@@ -78,36 +78,37 @@ export const MiniMap: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsMinimized(false)}
-            className="glass-panel rounded-xl py-1.5 px-3 border border-white/10 shadow-2xl flex items-center gap-2 pointer-events-auto backdrop-blur-xl text-sky-400 hover:text-white"
+            className="glass-panel rounded-xl py-1.5 px-3 border border-ui-line shadow-2xl flex items-center gap-2 pointer-events-auto backdrop-blur-xl text-ui-accent hover:text-ui-primary"
             title="Expand Orbital Radar"
           >
             <Compass className="w-3.5 h-3.5" />
             <span className="text-[10px] font-mono font-semibold">Radar Scope</span>
-            <ChevronUp className="w-3 h-3 text-zinc-400" />
+            <ChevronUp className="w-3 h-3 text-ui-muted" />
           </button>
         </div>
       ) : (
         <div
-          className={`radar-panel glass-panel rounded-xl p-2 border border-white/10 shadow-2xl flex-col gap-1.5 pointer-events-auto backdrop-blur-xl ${
+          className={`radar-panel glass-panel rounded-xl p-2 border border-ui-line shadow-2xl flex-col gap-1.5 pointer-events-auto backdrop-blur-xl ${
             isMobileOpen ? 'mobile-radar-active' : ''
           }`}
         >
           {/* Radar Header */}
-          <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono border-b border-zinc-800 pb-1">
-            <span className="flex items-center gap-1 text-sky-400 font-semibold">
+          <div className="flex items-center justify-between gap-2 text-[10px] text-ui-muted font-mono border-b border-ui-line pb-1 mb-0.5">
+            <span className="flex items-center gap-1 text-ui-accent font-semibold whitespace-nowrap">
               <Compass className="w-3 h-3" /> Radar Scope
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <button
+                type="button"
                 onClick={() => setZoomMode((prev) => (prev === 'inner' ? 'outer' : 'inner'))}
-                className="text-zinc-300 hover:text-white px-1.5 py-0.5 rounded bg-zinc-800/90 text-[9px] uppercase font-bold border border-zinc-700/60"
+                className="text-ui-secondary hover:text-ui-primary px-1.5 py-0.5 rounded bg-ui-inset text-[9px] uppercase font-bold border border-ui-line transition-colors whitespace-nowrap"
               >
                 {zoomMode === 'inner' ? 'Inner 2 AU' : 'Outer 32 AU'}
               </button>
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                className="hidden sm:inline-flex p-0.5 text-zinc-400 hover:text-white"
+                className="hidden sm:inline-flex p-0.5 rounded hover:bg-ui-inset text-ui-muted hover:text-ui-primary transition-colors"
                 title="Minimize radar"
                 aria-label="Minimize radar"
               >
@@ -117,7 +118,7 @@ export const MiniMap: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsMobileOpen(false)}
-                  className="radar-close md:hidden p-0.5 text-zinc-400 hover:text-white"
+                  className="radar-close md:hidden p-0.5 rounded hover:bg-ui-inset text-ui-muted hover:text-ui-primary transition-colors"
                   aria-label="Close radar"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -128,8 +129,8 @@ export const MiniMap: React.FC = () => {
 
 
         {/* SVG Radar Screen */}
-        <div className="relative w-40 h-40 bg-black/90 rounded-lg overflow-hidden border border-zinc-800">
-          <svg width={size} height={size} className="w-full h-full">
+        <div className="relative w-full aspect-square bg-black/90 rounded-lg overflow-hidden border border-ui-line">
+          <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full">
             {/* Concentric distance range rings */}
             <circle
               cx={center}
@@ -262,8 +263,8 @@ export const MiniMap: React.FC = () => {
           </svg>
 
           {/* Crosshair lines */}
-          <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-sky-500/15 pointer-events-none" />
-          <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-sky-500/15 pointer-events-none" />
+          <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-ui-selected pointer-events-none" />
+          <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-ui-selected pointer-events-none" />
         </div>
       </div>
       )}
