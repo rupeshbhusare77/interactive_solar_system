@@ -22,13 +22,14 @@ function publishCamera(canvas: HTMLCanvasElement, camera: THREE.PerspectiveCamer
 
 /** Frame targets in the unobstructed viewport and preserve manual zoom after arrival. */
 export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'outer' }) => {
-  const { cameraMode, selectedBodyId, selectionVersion, getBodyPosition, scaleMode, isInfoOpen, smoothCameraMotion } = useSimulation();
+  const { cameraMode, cameraResetVersion, selectedBodyId, selectionVersion, getBodyPosition, scaleMode, isInfoOpen, smoothCameraMotion } = useSimulation();
   const { camera, size, invalidate, gl } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const reducedMotion = !smoothCameraMotion;
   const diagnostics = useMemo(() => new URLSearchParams(location.search).has('cameraDiagnostics'), []);
   const [viewport, setViewport] = useState({ left: 0, top: 0, width: size.width, height: size.height });
-  const flight = useRef({ id: 0, active: false, elapsed: 0, startTarget: new THREE.Vector3(), startOffset: new THREE.Vector3(), startView: new THREE.Vector2() });
+  const flight = useRef({ id: 0, active: false, elapsed: 0, reset: false, startTarget: new THREE.Vector3(), startOffset: new THREE.Vector3(), startView: new THREE.Vector2() });
+  const previousResetVersion = useRef(cameraResetVersion);
   const previousBodyPosition = useRef<THREE.Vector3 | null>(null);
   const vectors = useMemo(() => ({ target: new THREE.Vector3(), offset: new THREE.Vector3(), direction: new THREE.Vector3(), delta: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }), []);
   const selectedBody = selectedBodyId ? CELESTIAL_BODY_MAP.get(selectedBodyId) : null;
@@ -63,6 +64,17 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls || !(camera instanceof THREE.PerspectiveCamera)) return;
+    const resetRequested = previousResetVersion.current !== cameraResetVersion;
+    previousResetVersion.current = cameraResetVersion;
+    if (cameraMode === 'free' && !resetRequested) {
+      // Deselection stops tracking without changing the current pose or projection.
+      if (!flight.current.reset) flight.current.active = false;
+      previousBodyPosition.current = null;
+      if (diagnostics && !flight.current.active) publishCamera(gl.domElement, camera, controls, flight.current.id, 1, false);
+      invalidate();
+      return;
+    }
+    flight.current.reset = resetRequested;
     flight.current.startTarget.copy(controls.target);
     flight.current.startOffset.copy(camera.position).sub(controls.target);
     flight.current.startView.set(camera.view?.offsetX ?? 0, camera.view?.offsetY ?? 0);
@@ -74,7 +86,7 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
     previousBodyPosition.current = null;
     if (diagnostics) publishCamera(gl.domElement, camera, controls, flight.current.id, 0, true);
     invalidate();
-  }, [cameraMode, selectedBodyId, selectionVersion, scaleMode, region, viewport, camera, size.width, size.height, invalidate, smoothCameraMotion, diagnostics, gl]);
+  }, [cameraMode, cameraResetVersion, selectedBodyId, selectionVersion, scaleMode, region, viewport, camera, size.width, size.height, invalidate, smoothCameraMotion, diagnostics, gl]);
 
   useSceneFrame((_, delta) => {
     const controls = controlsRef.current;
@@ -86,7 +98,8 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
     const radius = inspecting ? bodyRadius : systemRadius;
     const usableFov = 2 * Math.atan(Math.tan(camera.fov * Math.PI / 360) * viewport.height / size.height) * 180 / Math.PI;
     const distance = fitViewDistance(radius, usableFov, viewport.width / viewport.height);
-    if (cameraMode === 'top') offset.set(0, distance, distance * .001);
+    if (flight.current.reset) offset.set(0, 85, 120);
+    else if (cameraMode === 'top') offset.set(0, distance, distance * .001);
     else if (cameraMode === 'ecliptic') offset.set(0, distance * .015, distance);
     else if (inspecting) {
       direction.copy(target).negate();
@@ -110,8 +123,8 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
       camera.setViewOffset(size.width, size.height,
         THREE.MathUtils.lerp(current.startView.x, viewX, eased),
         THREE.MathUtils.lerp(current.startView.y, viewY, eased), size.width, size.height);
-      // Free Orbit retains the original startup pose and any manual framing.
-      if (cameraMode !== 'free') {
+      // Only an explicit reset moves Free Orbit back to the startup overview.
+      if (cameraMode !== 'free' || current.reset) {
         controls.target.copy(current.startTarget).lerp(target, eased);
         const startDistance = Math.max(current.startOffset.length(), 1e-7);
         const endDistance = Math.max(offset.length(), 1e-7);
@@ -124,6 +137,7 @@ export const CameraManager: React.FC<{ region?: ViewRegion }> = ({ region = 'out
         camera.position.copy(controls.target).add(direction);
       }
       current.active = progress < 1;
+      if (!current.active) current.reset = false;
       if (current.active) invalidate();
     } else if (inspecting && previousBodyPosition.current) {
       // Track translation without overriding the user's orbit, pan, or zoom.
